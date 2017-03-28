@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import os
+import sys
 import hmac
 import socket
 from xmlrpc.client import ServerProxy
@@ -22,23 +23,31 @@ class Client_RPC:
     __FAILED__ = 1
     def __init__(self, uri='http://localhost:4000'):
         self.s = ServerProxy(uri, allow_none=True)
+        self.sequence = self.generator()
+
+    def generator(self):
+        i = 0
+        while True:
+            value = yield i
+            i = (i + 1) % sys.maxsize
 
     def message(self, flag, args):
         key = dict()
-        key['login'] = ('sequence', 'bankcard', 'password')
-        key['renewal'] = ('sequence', 'token', 'bankcard')
-        key['deposit'] = ('sequence', 'token', 'bankcard', 'amount')
-        key['withdraw'] = ('sequence', 'token', 'bankcard', 'amount')
-        key['transfer'] = ('sequence', 'token', 'bankcard', 'transferred', 'amount')
+        key['login'] = ('bankcard', 'password')
+        key['renewal'] = ('token', 'bankcard')
+        key['deposit'] = ('token', 'bankcard', 'amount')
+        key['withdraw'] = ('token', 'bankcard', 'amount')
+        key['transfer'] = ('token', 'bankcard', 'transferred', 'amount')
 
         secret_key = dict()
+        secret_key['sequence'] = next(self.sequence)
         for i in range(len(key[flag])):
             secret_key[key[flag][i]] = args[i]
         return secret_key
 
     def login(self, *args):
         """
-        args = (sequence, bankcard, password)
+        args = (bankcard, password)
         """
         secret_key = self.message('login', args)
 
@@ -51,7 +60,7 @@ class Client_RPC:
 
     def renewal(self, *args):
         """
-        args = ('sequence', 'token', 'bankcard')
+        args = ('token', 'bankcard')
         """
         secret_key = self.message('renewal', args)
 
@@ -64,7 +73,7 @@ class Client_RPC:
 
     def deposit(self, *args):
         """
-        args = ('sequence', 'token', 'bankcard', 'amount')
+        args = ('token', 'bankcard', 'amount')
         """
         secret_key = self.message('deposit', args)
 
@@ -77,7 +86,7 @@ class Client_RPC:
 
     def withdraw(self, *args):
         """
-        args = ('sequence', 'token', 'bankcard', 'amount')
+        args = ('token', 'bankcard', 'amount')
         """
         secret_key = self.message('withdraw', args)
 
@@ -90,7 +99,7 @@ class Client_RPC:
 
     def transfer(self, *args):
         """
-        args = ('sequence', 'token', 'bankcard', 'transferred', 'amount')
+        args = ('token', 'bankcard', 'transferred', 'amount')
         """
         secret_key = self.message('transfer', args)
 
@@ -103,8 +112,8 @@ class Client_RPC:
 
 if __name__ == '__main__':
     rpc = Client_RPC()
-    print(rpc.login(0, '123', '456'))
-    print(rpc.renewal(1, '123', '23'))
-    print(rpc.deposit(3, '123', '23312', 12312))
-    print(rpc.withdraw(4, '213', '12321', 123))
-    print(rpc.transfer(5, '213', '123', '123', 12))
+    print(rpc.login('123', '456'))
+    print(rpc.renewal('123', '23'))
+    print(rpc.deposit('123', '23312', 12312))
+    print(rpc.withdraw('213', '12321', 123))
+    print(rpc.transfer('213', '123', '123', 12))
