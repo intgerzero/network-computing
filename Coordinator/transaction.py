@@ -7,36 +7,58 @@ import logging
 
 class Transaction:
 
-    def __init__(self, sequence):
-        self.sequence = sequence
-        self.file = open("coordinator.log", 'a+')
-        pass
+    __timeout__ = 5
+    __address__ = ('localhost', 4000)
+    def __init__(self, info):
+        logging.basicConfig(filename='myapp.log', level=logging.INFO)
+        logging.info('Transaction Started')
+
+        self.info = info
+        self.client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.settimeout(__timeout__)
+
+    def connect(self):
+        try:
+            self.client.connect(__address__)
+            return True
+        except:
+            return False
+
+    def __send(self, payload):
+        try:
+            self.client.send(payload)
+            return True
+        except:
+            return False
+
+    def __recv(self):
+        try:
+            msg = self.client.recv(payload)
+            return True, msg
+        except:
+            return False, ''
 
     def enquire(self):
-        pass
+        msg = {'sequence': self.info['sequence'], 'status': '0'}
+        payload = json.dumps(msg)
+        if self.send(payload):
+            status, msg = self.recv(8196)
+            if status:
+                return json.loads(msg)
+        msg['status'] = 1
+        return msg
 
     def commit(self):
-        pass
+        msg = {'sequence': self.info['sequence'], 'msg': self.info}
+        payload = json.dumps(msg)
+        if self.send(payload):
+            status, msg = self.recv(8196)
+            if status:
+                return json.loads(msg)
+        msg['status'] = 1
+        return msg
 
     def rollback(self):
-        pass
-
-    def accept_connection(self):
-        while True:
-            client, address = self.server.accept()
-
-            self.participantes[address] = {
-                        'socket': client,
-                        'commit': True
-                    }
-
-    def receive(self, client):
-        msg = ''
-        while True:
-            buf = client.recv(8192).decode('utf-8')
-            if not buf:
-                break
-            msg += buf
-        status = json.loads(msg)
-        if status['commit']:
-            pass
+        msg = {'sequence': self.info['sequence'], 'status': '1'}
+        payload = json.dumps(msg)
+        self.send(payload)
