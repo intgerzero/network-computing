@@ -4,6 +4,8 @@
 import os
 import sys
 import hmac
+import math
+import time
 import socket
 from xmlrpc.client import ServerProxy
 
@@ -26,7 +28,7 @@ class Client_RPC:
         self.sequence = self.generator()
 
     def generator(self):
-        i = 0
+        i = math.floor(time.time())
         while True:
             value = yield i
             i = (i + 1) % sys.maxsize
