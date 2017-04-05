@@ -17,33 +17,36 @@ class ClientAuth:
                 'raise_on_warnings': True
         }
 
+        # config = args
+
         self.cnx = mysql.connector.connect(**config)
         self.cursor = self.cnx.cursor()
 
     def create_token(self, info):
+        '''
+        86400 seconds is one day.
+        '''
         token = hashlib.sha256(os.urandom(16)).hexdigest()
         query = "INSERT INTO token(token, deadline, bankcard) VALUES('{}', {}, '{}');".format(token, math.floor(time.time()+86400), info['bankcard'])
-        print(query)
         self.cursor.execute(query)
         self.cnx.commit()
         return token
 
     def client_auth(self, info):
-        query = "SELECT password FROM login WHERE bankcard='{}';".format(info['bankcard'])
+        query = "SELECT * FROM login WHERE password='{}' AND bankcard='{}';".format(info['password'], info['bankcard'])
         self.cursor.execute(query)
         result = self.cursor.fetchall()
-        if result != [] and result[0][0] == info['password']:
+        if result != []:
             token = self.create_token(info)
             return True, token
         else:
             return False, 'Authentication failed.'
 
     def token_auth(self, info):
-        query = "SELECT deadline, bankcard FROM token WHERE token='{}'".format(info['token'])
+        query = "SELECT * FROM token WHERE token='{}' AND deadline>='{}' AND bankcard='{}'".format(info['token'], math.floor(time.time()), info['bankcard'])
         self.cursor.execute(query)
         result = self.cursor.fetchall()
-        print(result)
-        if result != [] and math.floor(time.time()) < int(result[0][0]) and result[0][1] == info['bankcard']:
+        if result != []:
             return True, 'Verification successed.'
         else:
             return False, 'Verification failed.'
@@ -51,7 +54,9 @@ class ClientAuth:
     def token_renewal(self, info):
         status, msg =  self.token_auth(info)
         if status:
-            self.create_token(info)
+            query = "UPDATE token SET deadline='{}' WHERE token='{}';".format(math.floor(time.time()+86400), info['token'])
+            self.cursor.execute(query)
+            self.cnx.commit()
             return True, 'Renewal successed.'
         else:
             return False, msg
