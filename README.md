@@ -64,7 +64,7 @@ the homework of network computing class
 ```json
 /* Client 请求格式 */
 {
-    "tpye": "00",
+    "type": "00",
     "bankcard": "0123456789",
     "password": "0123456789"
 }
