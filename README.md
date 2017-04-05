@@ -10,28 +10,21 @@ the homework of network computing class
 
 ### 协议设计
 
-#### 客户端如何定位服务器
+##### 客户端如何定位服务器
 
+客户端固定域名，使用域名解析得到的 IP 来定位服务器，服务端使用固定端口号 4000。
 
+##### 协议格式
 
-#### 协议格式
-
-采用基于 HTTP 协议的 XML-RPC 远程过程调用协议。
-
-实现以下几种方法：
-* login -- 登录
-* renewal -- 会话标识续期
-* deposit -- 存款
-* withdraw -- 取款
-* transfer -- 转账
-
-##### login (登录)
+基于 TCP 的应用层协议。TCP 是基于点到点的可靠的传输层协议，无需考虑应用层协议的一致性问题。采用基于 Key-Value 模式的 JSON 数据格式实现。		  基于 TCP 的应用层协议。TCP 是基于点到点的可靠的传输层协议，无需考虑应用层协议的一致性问题。采用基于 Key-Value 模式的 JSON 数据格式实现。
+		  
+###### 登录
 
 客户端请求参数:
 
 | 参数       | 意义    | 备注      |
 | -------- | ----- | ------- |
-| sequence | 系列号 | 唯一标识一次 RPC 事务操作 |
+| type     | 协议类型  | 值为 "00" |
 | bankcard | 银行卡号  |         |
 | password | 银行卡密码 |         |
 
@@ -39,7 +32,7 @@ the homework of network computing class
 
 | 参数         | 意义             | 备注            |
 | ---------- | -------------- | ------------- |
-| sequence | 系列号 | 唯一标识一次 RPC 事务操作 |
+| type       | 协议类型           | 值为 "00"       |
 | status     | 状态标志           | 0 代表成功，1 代表失败 |
 | token      | 会话标识           |               |
 | expiration | 到期时间           |               |
@@ -66,13 +59,33 @@ the homework of network computing class
 * 值为 300 的时候，客户端发起**续期**请求
 * 值为 0 的时候，token 无效，服务端删除该值
 
-##### 续期
+示例:
+
+```json
+/* Client 请求格式 */
+{
+    "tpye": "00",
+    "bankcard": "0123456789",
+    "password": "0123456789"
+}
+
+/* Server 返回格式 */
+{
+    "type": "01",
+    "status": "0",
+    "token": "1995172d456c6f0266142f8175eaafca",
+    "expiration": "86400",
+    "msg": ""
+}
+```
+
+###### 续期
 
 客户端请求参数:
 
 | 参数       | 意义   | 备注    |
 | -------- | ---- | ----- |
-| sequence | 系列号 | 唯一标识一次 RPC 事务操作 |
+| type     | 协议类型 | 值为 10 |
 | token    | 会话标识 |       |
 | bankcard | 银行卡号 |       |
 
@@ -80,7 +93,7 @@ the homework of network computing class
 
 | 参数     | 意义             | 备注            |
 | ------ | -------------- | ------------- |
-| sequence | 系列号 | 唯一标识一次 RPC 事务操作 |
+| type   | 协议类型           | 值为 11         |
 | token  | 会话标识           |               |
 | status | 状态标志           | 0 代表成功，1 代表失败 |
 | msg    | 错误消息，仅失败的时候不为空 |               |
@@ -91,13 +104,32 @@ the homework of network computing class
 2. 服务端接收到该请求后，设置这 token 的 expiration 为 86400，同时返回给服务端成功状态
 3. 服务端接收到请求后，设置 expiration 为 86400
 
-##### 存款
+示例:
+
+```json
+/* Client 请求格式 */
+{
+    "type": "10",
+    "token": "1995172d456c6f0266142f8175eaafca",
+    "bankcard": "0123456789"
+}
+
+/* Server 返回格式 */
+{
+    "type": "11",
+    "token": "1995172d456c6f0266142f8175eaafca",
+    "status": "0",
+    "msg": ""
+}
+```
+
+###### 存款
 
 客户端请求参数:
 
 | 参数       | 意义   | 备注    |
 | -------- | ---- | ----- |
-| sequence | 系列号 | 唯一标识一次 RPC 事务操作 |
+| type     | 协议类型 | 值为 20 |
 | token    | 会话标识 |       |
 | bankcard | 银行卡号 |       |
 | amount   | 金额   |       |
@@ -106,7 +138,7 @@ the homework of network computing class
 
 | 参数     | 意义             | 备注            |
 | ------ | -------------- | ------------- |
-| sequence | 系列号 | 唯一标识一次 RPC 事务操作|
+| type   | 协议类型           | 值为 21         |
 | token  | 会话标识           |               |
 | status | 状态标志           | 0 代表成功，1 代表失败 |
 | msg    | 错误消息，仅失败的时候不为空 |               |
@@ -117,13 +149,33 @@ the homework of network computing class
 2. 服务端验证账户是否有效
 3. ...
 
-##### 取款
+示例:
+
+```json
+/* Client 请求格式 */
+{
+    "type": "20",
+    "token": "1995172d456c6f0266142f8175eaafca",
+    "bankcard": "0123456789",
+    "amount": "100"
+}
+
+/* Server 返回格式 */
+{
+    "type": "21",
+    "token": "1995172d456c6f0266142f8175eaafca",
+    "status": "0",
+    "msg": ""
+}
+```
+
+###### 取款
 
 客户端请求参数:
 
 | 参数       | 意义   | 备注    |
 | -------- | ---- | ----- |
-| sequence | 系列号 | 唯一标识一次 RPC 事务操作 |
+| type     | 协议类型 | 值为 30 |
 | token    | 会话标识 |       |
 | bankcard | 银行卡号 |       |
 | amount   | 金额   |       |
@@ -132,7 +184,7 @@ the homework of network computing class
 
 | 参数     | 意义             | 备注            |
 | ------ | -------------- | ------------- |
-| sequence | 系列号 | 唯一标识一次 RPC 事务操作 |
+| type   | 协议类型           | 值为 31         |
 | token  | 会话标识           |               |
 | status | 状态标志           | 0 代表成功，1 代表失败 |
 | msg    | 错误消息，仅失败的时候不为空 |               |
@@ -143,13 +195,33 @@ the homework of network computing class
 2. 服务端验证账户是否有效
 3. ...
 
-##### 转账
+示例:
+
+```json
+/* Client 请求格式 */
+{
+    "type": "30",
+    "token": "1995172d456c6f0266142f8175eaafca",
+    "bankcard": "0123456789",
+    "amount": "100"
+}
+
+/* Server 返回格式 */
+{
+    "type": "31",
+    "token": "1995172d456c6f0266142f8175eaafca",
+    "status": "0",
+    "msg": ""
+}
+```
+
+###### 转账
 
 客户端请求参数:
 
 | 参数          | 意义        | 备注    |
 | ----------- | --------- | ----- |
-| sequence | 系列号 | 唯一标识一次 RPC 事务操作 |
+| type        | 协议类型      | 值为 40 |
 | token       | 会话标识      |       |
 | bankcard    | 银行卡号      |       |
 | transferred | 转入账户的银行卡号 |       |
@@ -159,7 +231,7 @@ the homework of network computing class
 
 | 参数     | 意义             | 备注            |
 | ------ | -------------- | ------------- |
-| sequence | 系列号 | 唯一标识一次 RPC 事务操作 |
+| type   | 协议类型           | 值为 41         |
 | token  | 会话标识           |               |
 | status | 状态标志           | 0 代表成功，1 代表失败 |
 | msg    | 错误消息，仅失败的时候不为空 |               |
@@ -169,6 +241,28 @@ the homework of network computing class
 1. 客户端发起存款请求
 2. 服务端验证账户是否有效
 3. ...
+
+示例:
+
+```json
+/* Client 请求格式 */
+{
+    "type": "40",
+    "token": "1995172d456c6f0266142f8175eaafca",
+    "bankcard": "0123456789",
+    "transferred": "1234567890",
+    "amount": "100"
+}
+
+/* Server 返回格式 */
+{
+    "type": "41",
+    "token": "1995172d456c6f0266142f8175eaafca",
+    "status": "0",
+    "msg": ""
+}
+```
+
 
 ### 上机题目完成过程中碰到的问题
 
