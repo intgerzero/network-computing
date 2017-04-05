@@ -335,8 +335,6 @@ the homework of network computing class
 
 ##### 具体实现
 
-请求提交、提交:
-
 | 参数 | 意义 | 备注 |
 | ---- | ---- | ---- |
 | sequence | 事务序列号 | |
@@ -354,6 +352,21 @@ the homework of network computing class
 | sequence | 事务序列号 | |
 | msg | JSON 数据 | 所执行的操作 |
 
+第一阶段返回结果:
+
+| 参数 | 意义 | 备注 |
+| ---- | ---- | ---- |
+| sequence | 事务序列号 | |
+| status | 状态 | 执行结果 | |
+
+第二阶段提交:
+
+| 参数 | 意义 | 备注 |
+| ---- | ---- | ---- |
+| sequence | 事务序列号 | |
+| status | 状态 | 0 代表执行，1 代表回滚 |
+
+第二阶段返回结果:
 | 参数 | 意义 | 备注 |
 | ---- | ---- | ---- |
 | sequence | 事务序列号 | |
