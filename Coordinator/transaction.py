@@ -76,10 +76,10 @@ class Transaction:
     def two_phase_commit(self):
         logging.info("{} first stage.".format(self.sequence))
 
-        flag = 0
+        flag = True
         for key in self.cohorts.keys(): # request stage
             if not self.enquire(key):
-                flag = 1
+                flag = False
             logging.info("{} {} responses.".format(self.sequence, key))
         
         logging.info("{} second stage.".format(self.sequence))
@@ -89,3 +89,5 @@ class Transaction:
             logging.info("{} {} commits.".format(self.sequence, key))
 
         logging.info('{} ------Transaction Ended------'.format(self.sequence))
+        
+        return flag

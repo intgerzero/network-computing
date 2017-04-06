@@ -35,35 +35,23 @@ class Route:
                    logging.debug('msg: {}'.format(msg))
                    if msg['type'] == "00":
                        logging.debug("type: {}".format(msg['type']))
-                       client.sendall(self.auth(msg))
+                       client.sendall(self._auth(msg))
                    elif msg['type'] == "10":
                        logging.debug("type: {}".format(msg['type']))
-                       client.sendall(self.renewal(msg))
-                   elif msg['type'] == "20":
+                       client.sendall(self._renewal(msg))
+                   elif msg['type'] == "20" or msg['type'] == '30' or msg['type'] == '40':
                        logging.debug("type: {}".format(msg['type']))
-                       serv_sock = self.server_sock()
-                       tran = transaction.Transaction(msg, client, serv_sock)
-                       tran.two_phase_commit()
-                   elif msg['type'] == "30":
-                       logging.debug("type: {}".format(msg['type']))
-                       serv_sock = self.server_sock()
-                       tran = transaction.Transaction(msg, client, serv_sock)
-                       tran.two_phase_commit()
-                   elif msg['type'] == "40":
-                       logging.debug("type: {}".format(msg['type']))
-                       serv_sock = self.server_sock()
-                       tran = transaction.Transaction(msg, client, serv_sock)
-                       tran.two_phase_commit()
+                       client.sendall(self._transaction(msg))
             except socket.timeout:
                 logging.debug("client timeout.")
                 pass
 
-    def server_sock(self):
+    def _server_sock(self):
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.connect(('127.0.0.1', 4001))
         return sock
 
-    def auth(self, msg):
+    def _auth(self, msg):
         result = self.client_auth.client_auth(msg)
         resp = {'type': '01',
                 'token': '',
@@ -78,7 +66,7 @@ class Route:
         logging.debug("auth: {}".format(resp))
         return json.dumps(resp).encode('utf-8')
 
-    def renewal(self, msg):
+    def _renewal(self, msg):
         result = self.client_auth.token_renewal(msg)
         resp = {'type': '11',
                 'token': msg['token']}
@@ -90,6 +78,26 @@ class Route:
             resp['msg'] = result[1]
         logging.debug("renewal: {}".format(resp))
         return json.dumps(resp).encode('utf-8')
+
+    def _transaction(self, msg):
+        result = self.client_auth.token_auth(msg)
+        if result[0]:
+            serv_sock = self._server_sock()
+            tran = transaction.Transaction(msg, client, serv_sock)
+            flag = tran.two_phase_commit()
+            serv_sock.close()
+        resp = {'type': str(int(msg['type']+1)),
+                'token': msg['token']}
+        if result[0] and flag:
+            resp['status'] = 0
+            resp['msg'] = 'Success.'
+        else:
+            resp['status'] = 1
+            if result[0]:
+                resp['msg'] = 'Transaction failed.'
+            else:
+                resp['msg'] = result[1]
+        return resp
 
 if __name__ == "__main__":
     co = Route('0.0.0.0', 4000)
