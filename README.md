@@ -335,16 +335,6 @@ the homework of network computing class
 
 ##### 具体实现
 
-| 参数 | 意义 | 备注 |
-| ---- | ---- | ---- |
-| sequence | 事务序列号 | |
-| status | 状态 | |
-
-| 参数 | 意义 | 备注 |
-| ---- | ---- | ---- |
-| sequence | 事务序列号 | |
-| status | 状态 | 是否正常执行 |
-
 第一阶段提交:
 
 | 参数 | 意义 | 备注 |
@@ -367,6 +357,7 @@ the homework of network computing class
 | status | 状态 | 0 代表执行，1 代表回滚 |
 
 第二阶段返回结果:
+
 | 参数 | 意义 | 备注 |
 | ---- | ---- | ---- |
 | sequence | 事务序列号 | |
