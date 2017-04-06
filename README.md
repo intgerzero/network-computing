@@ -32,7 +32,7 @@ the homework of network computing class
 
 | 参数         | 意义             | 备注            |
 | ---------- | -------------- | ------------- |
-| type       | 协议类型           | 值为 "00"       |
+| type       | 协议类型           | 值为 "01"       |
 | status     | 状态标志           | 0 代表成功，1 代表失败 |
 | token      | 会话标识           |               |
 | expiration | 到期时间           |               |
