@@ -5,6 +5,7 @@ import json
 import errno
 import socket
 import logging
+from transaction import Transaction
 from auth import ClientAuth
 
 logging.basicConfig(filename='route.log',level=logging.DEBUG)
@@ -19,6 +20,7 @@ class Route:
 
     def start_server(self):
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         s.bind(self.address)
         s.listen(5)
 
@@ -41,7 +43,7 @@ class Route:
                        client.sendall(self._renewal(msg))
                    elif msg['type'] == "20" or msg['type'] == '30' or msg['type'] == '40':
                        logging.debug("type: {}".format(msg['type']))
-                       client.sendall(self._transaction(msg))
+                       client.sendall(self._transaction(msg, client))
             except socket.timeout:
                 logging.debug("client timeout.")
                 pass
@@ -79,14 +81,15 @@ class Route:
         logging.debug("renewal: {}".format(resp))
         return json.dumps(resp).encode('utf-8')
 
-    def _transaction(self, msg):
+    def _transaction(self, msg, client):
         result = self.client_auth.token_auth(msg)
+        logging.debug("transaction auth: {}".format(result))
         if result[0]:
             serv_sock = self._server_sock()
-            tran = transaction.Transaction(msg, client, serv_sock)
+            tran = Transaction(msg, client, serv_sock)
             flag = tran.two_phase_commit()
             serv_sock.close()
-        resp = {'type': str(int(msg['type']+1)),
+        resp = {'type': str(int(msg['type'])+1),
                 'token': msg['token']}
         if result[0] and flag:
             resp['status'] = 0
@@ -97,7 +100,7 @@ class Route:
                 resp['msg'] = 'Transaction failed.'
             else:
                 resp['msg'] = result[1]
-        return resp
+        return json.dumps(resp).encode('utf-8')
 
 if __name__ == "__main__":
     co = Route('0.0.0.0', 4000)
