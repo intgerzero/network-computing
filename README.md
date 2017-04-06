@@ -74,7 +74,7 @@ the homework of network computing class
     "type": "01",
     "status": "0",
     "token": "1995172d456c6f0266142f8175eaafca",
-    "deadline": "1491567752",
+    "deadline": "1491567752",
     "msg": ""
 }
 ```
