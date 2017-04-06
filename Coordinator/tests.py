@@ -28,7 +28,7 @@ def renewal_test(token):
     renewal token expiration time
     protocol type '10'
     """
-    msg = {'type': '10', 'bankcard': '1234567890', 'token': token, 'deadline': 1590796159}
+    msg = {'type': '10', 'bankcard': '1234567890', 'token': token}
     payload = json.dumps(msg).encode('utf-8')
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.connect(('127.0.0.1', 4000))
