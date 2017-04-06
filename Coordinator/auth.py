@@ -54,13 +54,14 @@ class ClientAuth:
 
     def token_renewal(self, info):
         status, msg =  self.token_auth(info)
+        deadline = math.floor(time.time()+86400)
         if status:
-            query = "UPDATE token SET deadline='{}' WHERE token='{}';".format(math.floor(time.time()+86400), info['token'])
+            query = "UPDATE token SET deadline='{}' WHERE token='{}';".format(deadline, info['token'])
             self.cursor.execute(query)
             self.cnx.commit()
-            return True, 'Renewal successed.'
+            return True, 'Renewal successed.', deadline
         else:
-            return False, msg
+            return False, msg, -1
 
 if __name__ == '__main__':
     auth = ClientAuth();
