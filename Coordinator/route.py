@@ -72,7 +72,7 @@ class Route:
         result = self.client_auth.token_renewal(msg)
         resp = {'type': '11',
                 'token': msg['token'],
-                'deadline': result[2]}
+                'deadline': str(result[2])}
         if result[0] == True:
             resp['status'] = 0
             resp['msg'] = result[1]
