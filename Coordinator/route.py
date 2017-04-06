@@ -57,7 +57,7 @@ class Route:
         result = self.client_auth.client_auth(msg)
         resp = {'type': '01',
                 'token': '',
-                'expiration': '864000',
+                'expiration': str(result[2]),
                 'msg': ''}
         if result[0] == True:
             resp['status'] = 0

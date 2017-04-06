@@ -27,20 +27,21 @@ class ClientAuth:
         86400 seconds is one day.
         '''
         token = hashlib.sha256(os.urandom(16)).hexdigest()
-        query = "INSERT INTO token(token, deadline, bankcard) VALUES('{}', {}, '{}');".format(token, math.floor(time.time()+86400), info['bankcard'])
+        deadline = math.floor(time.time()+86400)
+        query = "INSERT INTO token(token, deadline, bankcard) VALUES('{}', {}, '{}');".format(token, deadline, info['bankcard'])
         self.cursor.execute(query)
         self.cnx.commit()
-        return token
+        return token, deadline
 
     def client_auth(self, info):
         query = "SELECT * FROM login WHERE password='{}' AND bankcard='{}';".format(info['password'], info['bankcard'])
         self.cursor.execute(query)
         result = self.cursor.fetchall()
         if result != []:
-            token = self.create_token(info)
-            return True, token
+            token, deadline = self.create_token(info)
+            return True, token, deadline
         else:
-            return False, 'Authentication failed.'
+            return False, 'Authentication failed.', -1
 
     def token_auth(self, info):
         query = "SELECT * FROM token WHERE token='{}' AND deadline>='{}' AND bankcard='{}'".format(info['token'], math.floor(time.time()), info['bankcard'])
