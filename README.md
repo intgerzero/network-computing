@@ -35,7 +35,7 @@ the homework of network computing class
 | type       | 协议类型           | 值为 "01"       |
 | status     | 状态标志           | 0 代表成功，1 代表失败 |
 | token      | 会话标识           |               |
-| expiration | 到期时间           |               |
+| deadline | 到期时间           |               |
 | msg        | 错误消息，仅失败的时候不为空 |               |
 
 大致流程:
@@ -53,11 +53,11 @@ the homework of network computing class
 * 因客户端崩溃导致 token 的存在，客户端登录成功后覆盖之
 * 关闭客户端，即删除当前的 token
 
-关于参数 expiration:
+关于参数 deadline:
 
-* 初始值为一天(86400秒)，每秒减 1
-* 值为 300 的时候，客户端发起**续期**请求
-* 值为 0 的时候，token 无效，服务端删除该值
+* 初始值为当前时间+一天(86400秒)
+* 当前时间与 deadline 相差 300 的时候，客户端发起**续期**请求
+* 当前时间大于等于 deadline 的时候，token 无效，服务端删除该值
 
 示例:
 
@@ -74,7 +74,7 @@ the homework of network computing class
     "type": "01",
     "status": "0",
     "token": "1995172d456c6f0266142f8175eaafca",
-    "expiration": "86400",
+    "deadline": "1491567752",
     "msg": ""
 }
 ```
@@ -100,10 +100,9 @@ the homework of network computing class
 
 大致流程:
 
-1. expiration 值为 300 的时候，客户端发起续期请求
-2. 服务端接收到该请求后，设置这 token 的 expiration 为 86400，同时返回给服务端成功状态
-3. 服务端接收到请求后，设置 expiration 为 86400
-
+1. 当前时间与 dealine 的差值为 300 的时候，客户端发起续期请求
+2. 服务端接收到该请求后，设置这 token 的 deadline 为 当前时间 + 86400，同时返回给服务端成功状态
+3. 服务端接收到请求后，deadline 设置为同样的值
 示例:
 
 ```json
@@ -119,6 +118,7 @@ the homework of network computing class
     "type": "11",
     "token": "1995172d456c6f0266142f8175eaafca",
     "status": "0",
+    "deadline": "1491567752",
     "msg": ""
 }
 ```
