@@ -213,6 +213,7 @@ the homework of network computing class
 {
     "type": "31",
     "token": "1995172d456c6f0266142f8175eaafca",
+    "sequence": "1491729338",
     "status": "0",
     "msg": ""
 }
@@ -262,6 +263,7 @@ the homework of network computing class
 {
     "type": "41",
     "token": "1995172d456c6f0266142f8175eaafca",
+    "sequence": "1491729338",
     "status": "0",
     "msg": ""
 }
