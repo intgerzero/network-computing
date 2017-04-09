@@ -140,7 +140,6 @@ the homework of network computing class
 | ------ | -------------- | ------------- |
 | type   | 协议类型           | 值为 21         |
 | token  | 会话标识           |               |
-| sequence | 流水号 | |
 | status | 状态标志            | 0 代表成功，1 代表失败 |
 | msg    | 错误消息，仅失败的时候不为空 |               |
 
@@ -165,7 +164,6 @@ the homework of network computing class
 {
     "type": "21",
     "token": "1995172d456c6f0266142f8175eaafca",
-    "sequence": "1491729338",
     "status": "0",
     "msg": ""
 }
@@ -188,7 +186,6 @@ the homework of network computing class
 | ------ | -------------- | ------------- |
 | type   | 协议类型           | 值为 31         |
 | token  | 会话标识           |               |
-| sequence | 流水号 | |
 | status | 状态标志           | 0 代表成功，1 代表失败 |
 | msg    | 错误消息，仅失败的时候不为空 |               |
 
@@ -213,7 +210,6 @@ the homework of network computing class
 {
     "type": "31",
     "token": "1995172d456c6f0266142f8175eaafca",
-    "sequence": "1491729338",
     "status": "0",
     "msg": ""
 }
@@ -237,7 +233,6 @@ the homework of network computing class
 | ------ | -------------- | ------------- |
 | type   | 协议类型           | 值为 41         |
 | token  | 会话标识           |               |
-| sequence | 流水号 | |
 | status | 状态标志           | 0 代表成功，1 代表失败 |
 | msg    | 错误消息，仅失败的时候不为空 |               |
 
@@ -263,7 +258,6 @@ the homework of network computing class
 {
     "type": "41",
     "token": "1995172d456c6f0266142f8175eaafca",
-    "sequence": "1491729338",
     "status": "0",
     "msg": ""
 }
