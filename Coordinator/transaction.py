@@ -54,6 +54,7 @@ class Transaction:
 
     def enquire(self, key):
         msg = {'sequence': self.sequence, 'msg': self.msg}
+        print(key, msg)
         if self.__send(key, msg):
             if self.__recv(key):
                 return True

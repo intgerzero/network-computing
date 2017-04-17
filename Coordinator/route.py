@@ -5,6 +5,7 @@ import json
 import errno
 import socket
 import logging
+from threading import Thread
 from transaction import Transaction
 from auth import ClientAuth
 
@@ -26,32 +27,40 @@ class Route:
 
         while True:
             client, addr = s.accept()
-            client.settimeout(2) # timeout time is 2 seconds
+            client.settimeout(10) # timeout time is 10 seconds
             logging.debug("connected: {}".format(addr))
-            try:
-                while True:
-                   buf = client.recv(8192)
-                   if not buf:
-                       break
-                   msg = json.loads(buf.decode('utf-8'))
-                   logging.debug('msg: {}'.format(msg))
-                   if msg['type'] == "00":
-                       logging.debug("type: {}".format(msg['type']))
-                       client.sendall(self._auth(msg))
-                   elif msg['type'] == "10":
-                       logging.debug("type: {}".format(msg['type']))
-                       client.sendall(self._renewal(msg))
-                   elif msg['type'] == "20" or msg['type'] == '30' or msg['type'] == '40':
-                       logging.debug("type: {}".format(msg['type']))
-                       client.sendall(self._transaction(msg, client))
-            except socket.timeout:
-                logging.debug("client timeout.")
-                pass
+            t = Thread(target=self.work, args=(client, addr))
+            t.start()
+
+
+    def work(self, client, addr):
+        try:
+            while True:
+               buf = client.recv(8192)
+               if not buf:
+                   break
+               msg = json.loads(buf.decode('utf-8'))
+               logging.debug('msg: {}'.format(msg))
+               if msg['type'] == "00":
+                   logging.debug("type: {}".format(msg['type']))
+                   client.sendall(self._auth(msg))
+               elif msg['type'] == "10":
+                   logging.debug("type: {}".format(msg['type']))
+                   client.sendall(self._renewal(msg))
+               elif msg['type'] == "20" or msg['type'] == '30' or msg['type'] == '40':
+                   logging.debug("type: {}".format(msg['type']))
+                   client.sendall(self._transaction(msg, client))
+        except socket.timeout:
+            logging.debug("client timeout.")
+            pass
 
     def _server_sock(self):
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.connect(('127.0.0.1', 4001))
-        return sock
+        try:
+            sock.connect(('127.0.0.1', 4001))
+            return sock, ''
+        except Exception as e:
+            return None, e
 
     def _auth(self, msg):
         result = self.client_auth.client_auth(msg)
@@ -60,10 +69,10 @@ class Route:
                 'deadline': str(result[2]),
                 'msg': ''}
         if result[0] == True:
-            resp['status'] = 0
+            resp['status'] = '0'
             resp['token'] = result[1]
         else:
-            resp['status'] = 1
+            resp['status'] = '1'
             resp['msg'] = result[1]
         logging.debug("auth: {}".format(resp))
         return json.dumps(resp).encode('utf-8')
@@ -74,10 +83,10 @@ class Route:
                 'token': msg['token'],
                 'deadline': str(result[2])}
         if result[0] == True:
-            resp['status'] = 0
+            resp['status'] = '0'
             resp['msg'] = result[1]
         else:
-            resp['status'] = 1
+            resp['status'] = '1'
             resp['msg'] = result[1]
         logging.debug("renewal: {}".format(resp))
         return json.dumps(resp).encode('utf-8')
@@ -86,21 +95,25 @@ class Route:
         result = self.client_auth.token_auth(msg)
         logging.debug("transaction auth: {}".format(result))
         if result[0]:
-            serv_sock = self._server_sock()
-            tran = Transaction(msg, client, serv_sock)
-            flag = tran.two_phase_commit()
-            serv_sock.close()
+            serv_sock, error = self._server_sock()
+            if serv_sock != None:
+                tran = Transaction(msg, client, serv_sock)
+                flag = tran.two_phase_commit()
+                serv_sock.close()
+            else:
+                flag = False
         resp = {'type': str(int(msg['type'])+1),
                 'token': msg['token']}
         if result[0] and flag:
-            resp['status'] = 0
+            resp['status'] = '0'
             resp['msg'] = 'Success.'
         else:
-            resp['status'] = 1
+            resp['status'] = '1'
             if result[0]:
-                resp['msg'] = 'Transaction failed.'
+                resp['msg'] = 'Transaction failed. {}'.format(error)
             else:
                 resp['msg'] = result[1]
+        print(resp)
         return json.dumps(resp).encode('utf-8')
 
 if __name__ == "__main__":

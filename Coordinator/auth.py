@@ -11,8 +11,8 @@ class ClientAuth:
     def __init__(self, *args):
         config = {
                 'user': 'root',
-                'password': 'vvl.me',
-                'host': 'q.vvl.me',
+                'password': 'root',
+                'host': 'localhost',
                 'database': 'login',
                 'raise_on_warnings': True
         }
@@ -44,7 +44,7 @@ class ClientAuth:
             return False, 'Authentication failed.', -1
 
     def token_auth(self, info):
-        query = "SELECT * FROM token WHERE token='{}' AND deadline>='{}' AND bankcard='{}'".format(info['token'], math.floor(time.time()), info['bankcard'])
+        query = "SELECT * FROM token WHERE token='{}' AND deadline>={} AND bankcard='{}'".format(info['token'], math.floor(time.time()), info['bankcard'])
         self.cursor.execute(query)
         result = self.cursor.fetchall()
         if result != []:
@@ -56,7 +56,7 @@ class ClientAuth:
         status, msg =  self.token_auth(info)
         deadline = math.floor(time.time()+86400)
         if status:
-            query = "UPDATE token SET deadline='{}' WHERE token='{}';".format(deadline, info['token'])
+            query = "UPDATE token SET deadline={} WHERE token='{}';".format(deadline, info['token'])
             self.cursor.execute(query)
             self.cnx.commit()
             return True, 'Renewal successed.', deadline
@@ -66,7 +66,7 @@ class ClientAuth:
 if __name__ == '__main__':
     auth = ClientAuth();
     info_1 = {'bankcard': '1234567890', 'password': '01234567890'}
-    status, token = auth.client_auth(info_1)
+    status, token, deadline = auth.client_auth(info_1)
     print(status, token)
     info_2 = {'bankcard': '1234567890', 'token': token, 'deadline': 1590796159}
     print(auth.token_auth(info_2))

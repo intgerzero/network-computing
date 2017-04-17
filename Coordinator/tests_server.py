@@ -14,7 +14,6 @@ def transaction_server_test():
         client, addr = s.accept()
         print("connected: {}".format(addr))
         msg = client.recv(1024).decode('utf-8')
-        print(msg)
         trans_1_recv = json.loads(msg)
         trans_1_ack = {'sequence': trans_1_recv['sequence'], 'status': '0'}
         payload = json.dumps(trans_1_ack).encode('utf-8')

@@ -56,6 +56,8 @@ def transaction_test(token):
     msg = s.recv(1024).decode('utf-8')
     print("transaction_test: " + str(msg))
     trans_2_recv = json.loads(msg)
+    if trans_2_recv['status'] == '1':
+        return
     trans_2_ack = {'sequence': trans_2_recv['sequence'], 'status': '0'}
     payload = json.dumps(trans_2_ack).encode('utf-8')
     s.sendall(payload)
