@@ -92,34 +92,35 @@ class Control:
             logging.info("request from coordinator: {}".format(trans_1_recv))
             msg = json.loads(trans_1_recv)
             
+            sequence = msg['sequence']
+            operation = msg['msg']
+
+            trans_ack = {'sequence': sequence, 'status': '0'}
+            payload = json.dumps(trans_ack).encode('utf-8')
+            
             if msg['status'] == '0': # 可以进行事务操作
-                sequence = msg['sequence']
-                operation = msg['msg']
-                
                 # 执行本地 transaction 操作，写日志
                 logging.info("redo, msg: {}".format(operation))
 
-                trans_ack = {'sequence': sequence, 'status': '0'}
-            
-                payload = json.dumps(trans_ack).encode('utf-8')
-                s.sendall(payload)
-                trans_2_recv = s.recv(1024).decode("utf-8")
-
-                # 释放 transaction 占有的资源
-                logging.info("commit from coordinator: {}".format(trans_2_recv))
-            
-                msg = json.loads(trans_2_recv)
-
-                if msg['sequence'] == sequence and msg['status'] == '0':
-                    iResult = True
-                else:
-                    logging.info("undo, msg: {}".format(operation))
-                    error = msg['msg']
-                    iResult = False
-                s.sendall(payload)
             else: # 无法进行事务操作
                 error = msg['msg']
+                logging.info("request failed.");
+            
+            s.sendall(payload)
+            trans_2_recv = s.recv(1024).decode("utf-8")
 
+            # 释放 transaction 占有的资源
+            logging.info("commit from coordinator: {}".format(trans_2_recv))
+            
+            msg = json.loads(trans_2_recv)
+
+            if msg['sequence'] == sequence and msg['status'] == '0':
+                iResult = True
+            else:
+                logging.info("undo, msg: {}".format(operation))
+                error = msg['msg']
+                iResult = False
+            s.sendall(payload)
         except Exception as e:
             iResult = False
             error = e

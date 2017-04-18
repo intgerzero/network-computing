@@ -34,13 +34,14 @@ class Transaction:
             self.cohorts[key].sendall(payload)
             logging.info("{} send {} to {}.".format(self.sequence, str(msg), key))
             return True
-        except socket.timeout:
-            logging.info("{} send {} to {}, timeout.".format(self.sequence, str(msg), key))
+        except Exception as e:
+            logging.info("{} send {} to {}, {}.".format(self.sequence, str(msg), key, e))
             return False
 
     def __recv(self, key):
         try:
             buf = self.cohorts[key].recv(1024)
+            print("buf: ", buf);
             msg = json.loads(buf.decode('utf-8'))
             logging.info("{} {} responses: {}.".format(self.sequence, key, str(msg)))
             if msg['status'] == '0'  and msg['sequence'] == self.sequence:
@@ -48,8 +49,8 @@ class Transaction:
             else:
                 logging.info("{} {} rejected".format(self.sequence, key))
                 return False
-        except socket.timeout:
-            logging.info("{} {} timeout".format(self.sequence, key))
+        except Exception as e:
+            logging.info("{} {} {}".format(self.sequence, key, e))
             return False
 
     def enquire(self, key):

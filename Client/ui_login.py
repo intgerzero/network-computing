@@ -62,6 +62,7 @@ class Ui_login(QMainWindow):
                 'password': self.passwordEdit.text()
         }
         
+        # 输入检查
         flag = True
         for key in config.keys():
             if config[key] == "":
@@ -76,18 +77,13 @@ class Ui_login(QMainWindow):
                     break
 
         if flag:
-            print(config)
             self.control = Control(**config)
-            resp = self.control.login()
-            print(resp)
-            if resp['status'] == '0':
-                self.statusBar().showMessage("Login successfully.")
+            msg = self.control.login()
+            self.statusBar().showMessage('{}'.format(msg['msg']))
 
+            if resp['status'] == 0: # login sucessfully
                 self.close()
                 self.main = Ui_main(self.control)
-
-            else:# login failed
-                self.statusBar().showMessage('Login failed. {}'.format(resp['msg']))
 
 
 if __name__ == '__main__':
