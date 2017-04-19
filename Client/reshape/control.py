@@ -3,6 +3,7 @@
 
 import json
 import time
+import math
 import signal
 import socket
 import logging
@@ -10,7 +11,9 @@ from threading import Thread
 
 __TIMEOUT__ = 10
 
-logging.basicConfig(filename='control.log',level=logging.DEBUG)
+log_fmt = '[%(asctime)s] p%(process)s {%(pathname)s:%(lineno)d} %(levelname)s - %(message)s'
+date_fmt = '%m-%d %H:%M:%S'
+logging.basicConfig(filename='control.log',level=logging.DEBUG, format=log_fmt, datefmt=date_fmt)
 
 class Control:
 
@@ -24,6 +27,13 @@ class Control:
         self.address = (kw['address'], int(kw['port']))
 
     def login(self):
+        """
+        return value:
+           result = {
+                "status": bool,
+                "msg": message
+            }
+        """
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         s.settimeout(__TIMEOUT__)
         
@@ -39,37 +49,41 @@ class Control:
             s.sendall(payload)
             buf = s.recv(1024).decode('utf-8')
             s.close()
-            logging.debuf("login: " + buf)
+            logging.debug("login recv: {}".format(buf))
 
             if buf == '': # means server closed
-                result['status'] = 1
+                result['status'] = False
                 result['msg'] = 'server closed'
             else:   
-                msg = json.dumps(buf)
-                
-                if msg['status'] == 0:
-                    self.login_info['token'] = msg['token']
-                    self.login_info['deadline'] = int(msg['deadline'])
-                    result['status'] = 0
-                    t = Thread(target=self.work)
-                    t.start()
+                reply = json.loads(buf)
+                if reply['status'] == 0:
+                    self.login_info['token'] = reply['token']
+                    self.login_info['deadline'] = int(reply['deadline'])
+                    result['status'] = True
+                    self.t_renewal = Thread(target=self.renewal_token)
+                    self.t_renewal.start()
                 else:
-                    result['status'] = 1
-                result['msg'] = msg['msg']
+                    result['status'] = False
+                result['msg'] = reply['msg']
         except Exception as e:  # 捕获所有的异常 https://python3-cookbook.readthedocs.io/zh_CN/latest/c14/p07_catching_all_exceptions.html
-            result['status'] = 1
+            result['status'] = False
             result['msg'] = e
         finally:
+            logging.debug("login result: {}".format(str(result)))
             return result
 
     def renewal_token(self):
+        logging.debug("------ renewal thread start ------")
         msg = {'type': '10', 'bankcard': self.login_info['bankcard'], 'token': self.login_info['token']}
         payload = json.dumps(msg).encode('utf-8')
         while True:
             time.sleep(60)
+            logging.debug("------ try to renewal ------")
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             s.settimeout(__TIMEOUT__)
-            if math.floor(time.time()) - self.login_info['deadline'] < 300:
+            date = math.floor(time.time())
+            if (self.login_info['deadline']-date) < 300 and \
+                    (self.login_info['deadline']-date):
                 try:
                     s.connect(self.address)
                     s.sendall(payload)
@@ -79,54 +93,148 @@ class Control:
                         logging.info("renewal fail.")
                     else:
                         msg = json.loads(buf)
-                        if msg['status'] == 0:
+                        if msg['status'] == 0 and msg['token'] == self.login_info['token']:
                             self.login_info['deadline'] = int(msg['deadline'])
                             logging.info("renewal success.")
                         else:
-                            logging.info("renewal fail.")
+                            logging.info("renewal fail. token has some question.")
                 except Exception as e:
                     logging.info("renewal fail. {}".format(e))
 
+    def stop(self):
+        """
+        when client exit, kill renewal thread
+        """
+        self.t_renewal.exit()
+
     def deposit(self, amount):
+        """
+        return value:
+            result = {
+                "status": bool,
+                "msg": message
+            }
+        """
         if amount <= 0:
-            pass
+            pass # 忽略无效金额
+        msg = { 'type': '20',
+                'token': self.login_info['token'],
+                'bankcard': self.login_info['bankcard'],
+                "amount": int(amount)
+            }
+        return self._operation(msg)
 
+    def withdraw(self, amount):
+        """
+        return value:
+            result = {
+                "status": bool,
+                "msg": message
+            }
+        """
+        if amount <= 0:
+            pass # 忽略无效金额
+        msg = { 'type': '30',
+                'token': self.login_info['token'],
+                'bankcard': self.login_info['bankcard'],
+                "amount": int(amount)
+            }
+        return self._operation(msg)
+
+    def transfer(self, amount, transferred):
+        """
+        return value:
+            result = {
+                "status": bool,
+                "msg": message
+            }
+        """
+        if amount <= 0:
+            pass # 忽略无效金额
+        msg = { "type": '40',
+                "token": self.login_info['token'],
+                "bankcard": self.login_info['bankcard'],
+                "transferred": str(transferred),
+                "amount": int(amount)
+            }
+        return self._operation(msg)
+
+
+    def _operation(self, msg):
+        result = dict()
         try:
-            msg = {'type': '20', 'token': self.login_info['token'], 'bankcard': self.login_info['bankcard'], "amount": int(amount)}
-
-        except Exception as e:
-            pass
-
-    def _transaction(self, msg):
-        logging.info("------ Transaction Start ------")
-
-        payload = json.dumps(msg).encode('utf-8')
-        try:
+            payload = json.dumps(msg).encode('utf-8')
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             s.settimeout(__TIMEOUT__)
             s.connect(self.address)
             s.sendall(payload)
-    
-            # first stage -- enquire
             buf = s.recv(1024).decode('utf-8')
-            logging.debug("from coordinaotr: {}".format(buf))
-
             if buf == '': # 连接被关闭
-                pass
+                result['status'] = False # 事务执行失败
+                result['msg'] = 'socket closed'
             else:
-                replay = json.loads(buf)
-                sequence = reply['sequence']
-                operation = reply['msg']
-
-                if operation != msg: # 有问题的回复
-                    pass
+                reply = json.loads(buf)
+                if reply.get('sequence') is None:
+                    result['status'] = False
+                    result['msg'] = reply['msg']
                 else:
-                    ack = {'sequence': sequence, 'status': '0'} # 回复
-                    payload = json.dumps(ack).encode('utf-8')
-                    
+                    self._transaction(reply) # ignore return
+                
+                    buf = s.recv(1024).decode('utf-8')
+                    logging.debug("deposite result: {}".format(buf))
+                    if buf == '': # 连接被关闭
+                        result['msg'] = 'socket close'
+                        result['status'] = False
+                    else:
+                        result = json.loads(buf)
+        except Exception as e:
+            result['status'] = False
+            result['msg'] = e
+        finally:
+            return result
+
+    def _transaction(self, reply):
+        logging.info("------ Transaction Start ------")
+
+        result = dict()
+        try:
+            # first stage -- enquire or close socket or can't operation transaction
+            logging.debug("first stage from coordinaotr: {}".format(buf))
+
+            sequence = reply['sequence'] # 标记事务序列
+
+            ack = {'sequence': sequence, 'status': '0'} # 回复
+            payload = json.dumps(ack).encode('utf-8')
+            s.sendall(payload)
+            logging.info("{} first stage completes.".format(sequence))
+
+            # 执行本地事务操作，但不释放资源
+            logging.info("redo, msg: {}".format(operation))
+
+            # second stage -- commit or rollback
+            buf = s.recv(1024).decode('utf-8')
+            logging.debuf("second stage from coordinator: {}".format(buf))
+
+            if buf == "": # 连接被关闭
+                result['status'] = False # 事务执行失败
+                result['msg'] = 'socket closed'
+            else:
+                reply = json.loads(buf)
+                if reply['sequence'] == sequence and reply['status'] == 0:
+                    # 执行成功，释放资源
+                    result['status'] = True
+                    result['msg'] = 'transaction success'
+                else:
+                    # 回滚操作，释放资源
+                    result['status'] = False
+                    result['msg'] = 'transaction fail'
+                s.sendall(payload)
+                logging.info("{} second stage completes.".format(sequence))
 
         except Exception as e:
-            pass
+            result['status'] = False
+            result['msg'] = e
         finally:
-            s.close()
-
+            logging.info("------ Transaction End ------")
+            logging.debug("{} transaction result: {}".format(str(result)))
+            return result

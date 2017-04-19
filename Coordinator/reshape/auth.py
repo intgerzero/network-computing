@@ -104,6 +104,23 @@ class ClientAuth:
             flag = False
             deadline = -1
         return flag, message, deadline
+    
+    def search(self, bankcard):
+        query = "SELECT * FROM login WHERE bankcard='{}'".format(bankcard)
+        try:
+            self.cursor.execute(query)
+            result = self.cursor.fetchall()
+            if result != []:
+                flag = True
+                error = ''
+            else:
+                flag = False
+                error = 'not exist this account'
+        except Exception as e:
+            flag = False
+            error = e
+        finally:
+            return flag, error
 
 # Example && test
 if __name__ == '__main__':

@@ -32,10 +32,14 @@ class Transaction:
     def __send(self, key, msg):
         payload = json.dumps(msg).encode('utf-8')
         try:
-            self.cohorts[key].sendall(payload)
-            logging.debug("{} send {} to {}".format(self.sequence, str(msg), key))
-            flag = True
-            error = ''
+            if self.cohorts[key] is None: # 不存在
+                flag = False
+                erro = "{} closed".format(key)
+            else:
+                self.cohorts[key].sendall(payload)
+                logging.debug("{} send {} to {}".format(self.sequence, str(msg), key))
+                flag = True
+                error = ''
         except Exception as e:
             error = e
             flag = False
@@ -44,21 +48,25 @@ class Transaction:
     
     def __recv(self, key):
         try:
-            buf = self.cohorts[key].recv(1024).decode('utf-8')
-            if buf == '': # 连接关闭
-                logging.debug("{} closed socket".format(key))
+            if self.cohorts[key] is None:
                 flag = False
-                error = "{}'s socket was closed".format(key)
+                error = "{} closed".format(key)
             else:
-                logging.debug("{} {} responses: {}".format(self.sequence, key, buf))
-                msg = json.loads(buf)
-
-                if msg['status'] == 0 and msg['sequence'] == self.sequence:
-                    flag = True
-                    error = ''
-                else:
+                buf = self.cohorts[key].recv(1024).decode('utf-8')
+                if buf == '': # 连接关闭
+                    logging.debug("{} closed socket".format(key))
                     flag = False
-                    error = "{} reject".format(key)
+                    error = "{}'s socket was closed".format(key)
+                else:
+                    logging.debug("{} {} responses: {}".format(self.sequence, key, buf))
+                    msg = json.loads(buf)
+
+                    if msg['status'] == 0 and msg['sequence'] == self.sequence:
+                        flag = True
+                        error = ''
+                    else:
+                        flag = False
+                        error = "{} reject".format(key)
         except Exception as e:
             flag = False
             error = e
@@ -84,6 +92,13 @@ class Transaction:
         return self._send_msg(key, msg)
 
     def two_phase_commit(self):
+        """
+        return value:
+            result = {
+                "status": bool,
+                "msg": message
+            }
+        """
         logging.info("{} ------ Transaction Started ------".format(self.sequence))
         logging.info("{} ------ First Stage ------".format(self.sequence))
 
