@@ -8,11 +8,17 @@ http://blog.sina.com.cn/s/blog_9b78c91101019o93.html
 
 import sys
 import time
+import logging
 from control import Control
 from PyQt5 import QtCore, QtGui
 from PyQt5.QtWidgets import (QApplication, QDialog, QSizePolicy,
         QMainWindow, QPushButton, QGridLayout, QVBoxLayout,
         QLabel, QLineEdit, QDialogButtonBox, QSpacerItem)
+
+log_fmt = '[%(asctime)s] p%(process)s {%(pathname)s:%(lineno)d} %(levelname)s - %(message)s'
+date_fmt = '%m-%d %H:%M:%S'
+logging.basicConfig(filename='route.log',level=logging.DEBUG, format=log_fmt, datefmt=date_fmt)
+
 
 class Dialog(QDialog):
     
@@ -91,59 +97,46 @@ class Ui_main(QMainWindow):
 
     def deposit(self):
         result = {'timestamp': time.asctime(), 'type': 'deposit'}
+        self._operation(result)
+
+    def withdraw(self):
+        result = {'timestamp': time.asctime(), 'type': 'withdraw'}
+        self._operation(result)
+
+    def transfer(self):
+        result = {'timestamp': time.asctime(), 'type': 'deposit'}
+        self._operation(result)
+
+    def _operation(self, result):
         dialog = Dialog('deposit', self)
         if dialog.exec_():
             amount = dialog.amount()
+            # 输入检查, 留空
             try:
                 amount = float(amount)
-                if amount < 0:
+                if amount <= 0: # positive number
                     self.statusBar().showMessage("请输入正数")
                 else:
                     result['amount'] = amount
                     self.statusBar().showMessage("正在处理...")
-                    resp = self.control.deposit(amount)
+                    reply = self.control.deposit(amount)
                     
-                    print(resp)
-                    if resp[0] == True:
+                    if reply['status'] == True:
                         result['result'] = 'success'
                         self.statusBar().showMessage("deposit {:.2f} sucessfully.".format(amount))
                     else:
                         result['result'] = 'fail'
-                        self.statusBar().showMessage("deposit {:.2f} failed. Reason: {}".format(amount, resp[1]))
-                    self.listPrint.append(result)
+                        self.statusBar().showMessage("deposit {:.2f} failed. Reason: {}".format(amount, reply['msg']))
             except ValueError:
+                result['result'] = 'fail'
                 self.statusBar().showMessage("请输入有效正数")
             except Exception as e:
+                result['result'] = 'fail'
                 self.statusBar().showMessage(str(e))
+            finally:
+                self.listPrint.append(result)
 
         dialog.destroy()
-
-    def withdraw(self):
-        result = {'timestamp': time.asctime(), 'type': 'withdraw'}
-        dialog = Dialog('withdraw',self)
-        if dialog.exec_():
-            amount = dialog.amount()
-            result['amount'] = amount
-            self.statusBar().showMessage("正在处理...")
-            print(amount)
-            result['result'] = '0' # 结果
-
-        dialog.destroy()
-        self.listPrint.append(result)
-
-    def transfer(self):
-        result = {'timestamp': time.asctime(), 'type': 'deposit'}
-        dialog = Dialog('transfer',self)
-        if dialog.exec_():
-            amount = dialog.amount()
-            transfered = dialog.transfered()
-            result['amount'] = amount
-            result['transfered'] = transfered
-            self.statusBar().showMessage("正在处理...")
-            print(amount, transfered)
-
-        dialog.destroy()
-        self.listPrint.add(result)
 
     def printout(self):
         pass

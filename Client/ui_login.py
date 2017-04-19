@@ -3,11 +3,16 @@
 
 import sys
 import time
+import logging
 from PyQt5 import QtCore
 from PyQt5.QtWidgets import (QWidget, QDialog, QMainWindow, QLabel, QLineEdit, QPushButton,
         QTextEdit, QPlainTextEdit, QGridLayout, QApplication)
 from control import Control
 from ui_main import Ui_main
+
+log_fmt = '[%(asctime)s] p%(process)s {%(pathname)s:%(lineno)d} %(levelname)s - %(message)s'
+date_fmt = '%m-%d %H:%M:%S'
+logging.basicConfig(filename='control.log',level=logging.DEBUG, format=log_fmt, datefmt=date_fmt)
 
 class Ui_login(QMainWindow):
 
@@ -78,13 +83,13 @@ class Ui_login(QMainWindow):
 
         if flag:
             self.control = Control(**config)
-            msg = self.control.login()
-            self.statusBar().showMessage('{}'.format(msg['msg']))
+            reply = self.control.login()
+            self.statusBar().showMessage('{}'.format(reply['msg']))
+            logging.debug("reply: {}".format(str(reply)))
 
-            if resp['status'] == 0: # login sucessfully
+            if reply['status'] == True: # login sucessfully
                 self.close()
                 self.main = Ui_main(self.control)
-
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)

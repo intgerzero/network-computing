@@ -6,89 +6,121 @@ import math
 import json
 import socket
 import logging
-import transaction
 
-logging.basicConfig(filename='transaction.log', level=logging.DEBUG)
+log_fmt = '[%(asctime)s] p%(process)s {%(pathname)s:%(lineno)d} %(levelname)s - %(message)s'
+date_fmt = '%m-%d %H:%M:%S'
+logging.basicConfig(filename='route.log',level=logging.DEBUG, format=log_fmt, datefmt=date_fmt)
+
+__TIMEOUT__ = 5
 
 class Transaction:
 
-    def __init__(self, msg, sponsor, participator):
+    def __init__(self, msg, clnt, serv):
         """
-        msg -- message, bytes, client --> route
-        sponsor -- sponsor's sock
-        participator -- participator's sock
+        msg -- message, dictionary, from client
+        clnt -- client's sock
+        serv -- remote server's sock
         """
         self.msg = msg
-        self.cohorts = {'sponsor': sponsor,
-                'participator': participator}
+        self.cohorts = {'client': clnt,
+                        'server': serv
+                        }
         for sock in self.cohorts.values():
-            sock.settimeout(2)
-        self.sequence = math.floor(time.time())
-
-        logging.info('{} ------Transaction Started------'.format(self.sequence))
-
+            sock.settimeout(__TIMEOUT__) # 设置超时时间
+        self.sequence = math.floor(time.time()) # 事务序列号
 
     def __send(self, key, msg):
         payload = json.dumps(msg).encode('utf-8')
         try:
-            self.cohorts[key].sendall(payload)
-            logging.info("{} send {} to {}.".format(self.sequence, str(msg), key))
-            return True
+            if self.cohorts[key] is None: # 不存在
+                flag = False
+                erro = "{} closed".format(key)
+            else:
+                self.cohorts[key].sendall(payload)
+                logging.debug("{} send {} to {}".format(self.sequence, str(msg), key))
+                flag = True
+                error = ''
         except Exception as e:
-            logging.info("{} send {} to {}, {}.".format(self.sequence, str(msg), key, e))
-            return False
-
+            error = e
+            flag = False
+        finally:
+            return flag, e
+    
     def __recv(self, key):
         try:
-            buf = self.cohorts[key].recv(1024)
-            print("buf: ", buf);
-            msg = json.loads(buf.decode('utf-8'))
-            logging.info("{} {} responses: {}.".format(self.sequence, key, str(msg)))
-            if msg['status'] == '0'  and msg['sequence'] == self.sequence:
-                return True
+            if self.cohorts[key] is None:
+                flag = False
+                error = "{} closed".format(key)
             else:
-                logging.info("{} {} rejected".format(self.sequence, key))
-                return False
+                buf = self.cohorts[key].recv(1024).decode('utf-8')
+                if buf == '': # 连接关闭
+                    logging.debug("{} closed socket".format(key))
+                    flag = False
+                    error = "{}'s socket was closed".format(key)
+                else:
+                    logging.debug("{} {} responses: {}".format(self.sequence, key, buf))
+                    msg = json.loads(buf)
+
+                    if msg['status'] == 0 and msg['sequence'] == self.sequence:
+                        flag = True
+                        error = ''
+                    else:
+                        flag = False
+                        error = "{} reject".format(key)
         except Exception as e:
-            logging.info("{} {} {}".format(self.sequence, key, e))
-            return False
+            flag = False
+            error = e
+        finally:
+            return flag, error
 
-    def enquire(self, key):
+    def _send_msg(self, key, msg):
+        status, error = self.__send(key, msg)
+        if status:
+            status, error = self.__recv(key)
+        return status, error
+
+    def enquire(self, key): # 第一阶段 -- 询问
         msg = {'sequence': self.sequence, 'msg': self.msg}
-        print(key, msg)
-        if self.__send(key, msg):
-            if self.__recv(key):
-                return True
-        return False
+        return self._send_msg(key, msg)
 
-    def commit(self, key):
+    def commit(self, key): # 第二阶段 -- 提交，必会成功
         msg = {'sequence': self.sequence, 'status': '0'}
-        if self.__send(key, msg):
-            if self.__recv(key):
-                return True
-        return False
+        return self._send_msg(key, msg)
 
-    def rollback(self, key):
+    def roolback(self, key): # 第二阶段 -- 回滚，必会成功
         msg = {'sequence': self.sequence, 'status': '1'}
-        if self.__send(key, msg):
-            if self.__recv(key):
-                return True
-        return False
+        return self._send_msg(key, msg)
 
     def two_phase_commit(self):
-        logging.info("{}: first stage.".format(self.sequence))
+        """
+        return value:
+            result = {
+                "status": bool,
+                "msg": message
+            }
+        """
+        logging.info("{} ------ Transaction Started ------".format(self.sequence))
+        logging.info("{} ------ First Stage ------".format(self.sequence))
 
-        flag = True
+        collect = list()
+        flag = True # 第一阶段参与者标志
         for key in self.cohorts.keys(): # request stage
-            flag = self.enquire(key)
-        
-        logging.info("{}: second stage.".format(self.sequence))
-        for key in self.cohorts.keys(): # commit stage, ignore result
-            if flag == False:
-                self.rollback(key)
+            status, error = self.enquire(key)
+            if status:
+                colleck.append(key)
             else:
-                self.commit(key)
+                flag = False
+                logging.debug("{} {}".format(key, error))
 
-        logging.info('{} ------Transaction Ended------'.format(self.sequence))
-        
-        return flag
+        logging.info("{} ------ Second Stage ------".format(self.sequence))
+
+        if flag: # 参与者们可以执行事务操作
+            for key in collect:
+                self.commit(key) # 一定可执行成功，不检查状态
+        else:
+            for key in collect:
+                self.roolback(key)
+
+        logging.info("{} ------ Transaction End ------".formation(self.sequence))
+
+        return flag # 事务是否成功执行
