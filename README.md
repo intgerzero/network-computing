@@ -16,7 +16,7 @@ the homework of network computing class
 
 ##### 协议格式
 
-基于 TCP 的应用层协议。TCP 是基于点到点的可靠的传输层协议，无需考虑应用层协议的一致性问题。采用基于 Key-Value 模式的 JSON 数据格式实现。		  基于 TCP 的应用层协议。TCP 是基于点到点的可靠的传输层协议，无需考虑应用层协议的一致性问题。采用基于 Key-Value 模式的 JSON 数据格式实现。
+基于 TCP 的应用层协议。TCP 是基于点到点的可靠的传输层协议，无需考虑应用层协议的一致性问题。采用基于 Key-Value 模式的 JSON 数据格式实现。
 		  
 ###### 登录
 
@@ -140,7 +140,7 @@ the homework of network computing class
 | ------ | -------------- | ------------- |
 | type   | 协议类型           | 值为 21         |
 | token  | 会话标识           |               |
-| status | 状态标志           | 0 代表成功，1 代表失败 |
+| status | 状态标志            | 0 代表成功，1 代表失败 |
 | msg    | 错误消息，仅失败的时候不为空 |               |
 
 大致流程:
@@ -186,7 +186,7 @@ the homework of network computing class
 | ------ | -------------- | ------------- |
 | type   | 协议类型           | 值为 31         |
 | token  | 会话标识           |               |
-| status | 状态标志           | 0 代表成功，1 代表失败 |
+| status | 状态标志           | 0 代表成功，1 代表失败 |
 | msg    | 错误消息，仅失败的时候不为空 |               |
 
 大致流程:
@@ -233,7 +233,7 @@ the homework of network computing class
 | ------ | -------------- | ------------- |
 | type   | 协议类型           | 值为 41         |
 | token  | 会话标识           |               |
-| status | 状态标志           | 0 代表成功，1 代表失败 |
+| status | 状态标志           | 0 代表成功，1 代表失败 |
 | msg    | 错误消息，仅失败的时候不为空 |               |
 
 大致流程:
