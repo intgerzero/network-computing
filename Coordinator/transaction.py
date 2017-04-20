@@ -9,7 +9,7 @@ import logging
 
 log_fmt = '[%(asctime)s] p%(process)s {%(pathname)s:%(lineno)d} %(levelname)s - %(message)s'
 date_fmt = '%m-%d %H:%M:%S'
-logging.basicConfig(filename='route.log',level=logging.DEBUG, format=log_fmt, datefmt=date_fmt)
+logging.basicConfig(filename='route.log',level=logging.INFO, format=log_fmt, datefmt=date_fmt)
 
 __TIMEOUT__ = 5
 

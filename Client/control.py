@@ -1,15 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import sys
-import json
-import time
-import math
-import signal
-import socket
-import logging
-from threading import Thread
-
 """
 客户端崩溃时刻：
 
@@ -24,17 +15,26 @@ from threading import Thread
 TEST_POINT_1 = False # before request
 TEST_POINT_2 = False # before first recv
 TEST_POINT_3 = False # before first send
-TEST_POINT_4 = True # before second recv
+TEST_POINT_4 = False # before second recv
 TEST_POINT_5 = False # before second send
 TEST_POINT_6 = False # before result recv
 TEST_POINT_7 = False # after  result recv
 # --------- END ----------
 
+import sys
+import json
+import time
+import math
+import signal
+import socket
+import logging
+from threading import Thread
+
 __TIMEOUT__ = 10
 
 log_fmt = '[%(asctime)s] p%(process)s {%(pathname)s:%(lineno)d} %(levelname)s - %(message)s'
 date_fmt = '%m-%d %H:%M:%S'
-logging.basicConfig(filename='control.log',level=logging.DEBUG, format=log_fmt, datefmt=date_fmt)
+logging.basicConfig(filename='control.log',level=logging.INFO, format=log_fmt, datefmt=date_fmt)
 
 class Control:
 
@@ -192,13 +192,13 @@ class Control:
             # test point 1
             if TEST_POINT_1 == True:
                 logging.info("TEST_POINT_1 == True, exit")
-                sys.exit(0)
+                exit(0)
 
             s.sendall(payload)
 
             if TEST_POINT_2 == True:
                 logging.info("TEST_POINT_2 == True, exit")
-                sys.exit(0)
+                exit(0)
 
             buf = s.recv(1024).decode('utf-8')
             if buf == '': # 连接被关闭
@@ -213,9 +213,9 @@ class Control:
                     self._transaction(s, reply) # ignore return
                 
                     # test point 6
-                    if TEST_POINT_3 or TEST_POINT_4 or TEST_POINT_5 or TEST_POINT_6 == True:
+                    if TEST_POINT_6 == True:
                         logging.info("TEST_POINT_6 == True, exit")
-                        sys.exit(0)
+                        exit(0)
 
                     buf = s.recv(1024).decode('utf-8')
                     logging.debug("deposite result: {}".format(buf))
@@ -223,7 +223,7 @@ class Control:
                     # test point 7
                     if TEST_POINT_7 == True:
                         logging.info("TEST_POINT_7 == True, exit")
-                        sys.exit(0)
+                        exit(0)
 
                     if buf == '': # 连接被关闭
                         result['msg'] = 'socket close'
@@ -258,7 +258,7 @@ class Control:
 
             if TEST_POINT_3 == True:
                 logging.info("TEST_POINT_3 == True, exit")
-                sys.exit(0)
+                exit(0)
 
             s.sendall(payload)
             logging.info("{} first stage completes.".format(sequence))
@@ -267,7 +267,7 @@ class Control:
 
             if TEST_POINT_4 == True:
                 logging.info("TEST_POINT_4 == True, exit")
-                sys.exit(0)
+                exit(0)
 
             buf = s.recv(1024).decode('utf-8')
             logging.debug("second stage from coordinator: {}".format(buf))
@@ -288,7 +288,7 @@ class Control:
                     result['msg'] = 'transaction fail'
                 if TEST_POINT_5 == True:
                     logging.info("TEST_POINT_% == True, exit")
-                    sys.exit(0)
+                    exit(0)
                 s.sendall(payload)
             logging.info("{} second stage completes.".format(sequence))
 

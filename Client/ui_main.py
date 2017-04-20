@@ -17,7 +17,7 @@ from PyQt5.QtWidgets import (QApplication, QDialog, QSizePolicy,
 
 log_fmt = '[%(asctime)s] p%(process)s {%(pathname)s:%(lineno)d} %(levelname)s - %(message)s'
 date_fmt = '%m-%d %H:%M:%S'
-logging.basicConfig(filename='route.log',level=logging.DEBUG, format=log_fmt, datefmt=date_fmt)
+logging.basicConfig(filename='route.log',level=logging.INFO, format=log_fmt, datefmt=date_fmt)
 
 
 class Dialog(QDialog):
@@ -165,12 +165,16 @@ class Ui_main(QMainWindow):
                         return
 
                     logging.debug("reply from control: {}".format(str(reply)))
-                    if reply['status'] == True:
-                        result['result'] = 'success'
-                        self.statusBar().showMessage("{} {:.2f} sucessfully.".format(type, amount))
+                    if reply.get("status") != None and reply.get('sequence') == None: # TEST_POINT 导致的 bug 修正
+                        if reply['status'] == True:
+                            result['result'] = 'success'
+                            self.statusBar().showMessage("{} {:.2f} sucessfully.".format(type, amount))
+                        else:
+                            result['result'] = 'fail'
+                            self.statusBar().showMessage("{} {:.2f} failed. Reason: {}".format(type, amount, reply['msg']))
                     else:
                         result['result'] = 'fail'
-                        self.statusBar().showMessage("{} {:.2f} failed. Reason: {}".format(type, amount, reply['msg']))
+                        self.statusBar().showMessage("{} {:.2f} failed. Unknow reason.".format(type, amount))
             except ValueError:
                 result = '-1'
                 result['result'] = 'fail'

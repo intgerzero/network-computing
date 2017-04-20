@@ -15,7 +15,7 @@ __TIMEOUT__ = 10 # client socket timeout
 
 log_fmt = '[%(asctime)s] p%(process)s {%(pathname)s:%(lineno)d} %(levelname)s - %(message)s'
 date_fmt = '%m-%d %H:%M:%S'
-logging.basicConfig(filename='route.log',level=logging.DEBUG, format=log_fmt, datefmt=date_fmt)
+logging.basicConfig(filename='route.log',level=logging.INFO, format=log_fmt, datefmt=date_fmt)
 
 class Route:
 
@@ -125,7 +125,7 @@ class Route:
                     'msg': error
                 }
             self.client_auth.close()
-        logging.debug("_auth result: {}".format(msg))
+        logging.info("_auth result: {}".format(msg))
         return json.dumps(msg).encode('utf-8')
 
     def _renewal(self, msg):
