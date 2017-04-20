@@ -17,7 +17,7 @@ from PyQt5.QtWidgets import (QApplication, QDialog, QSizePolicy,
 
 log_fmt = '[%(asctime)s] p%(process)s {%(pathname)s:%(lineno)d} %(levelname)s - %(message)s'
 date_fmt = '%m-%d %H:%M:%S'
-logging.basicConfig(filename='route.log',level=logging.DEBUG, format=log_fmt, datefmt=date_fmt)
+logging.basicConfig(filename='route.log',level=logging.INFO, format=log_fmt, datefmt=date_fmt)
 
 
 class Dialog(QDialog):
@@ -70,21 +70,32 @@ class Dialog(QDialog):
 
 class Print_dialog(QDialog):
 
-    def __init__(self, result):
-        self.result = result
+    def __init__(self, results):
+        """
+        results is tuple or list
+        """
+        self.results = results
         super().__init__()
+        self.initUI()
 
     def initUI(self):
-        self.resize(240, 200)
+        self.resize(400, 300)
         self.setWindowTitle("交易清单")
 
         self.setSizeGripEnabled(True)
         self.logOutput = QTextEdit(self)
         self.logOutput.setReadOnly(True)
-        self.logOutput.setLineWrapMode(QTextEdit.NoWrap)
+        #self.logOutput.setLineWrapMode(QTextEdit.NoWrap)
         self.logOutput.setGeometry(QtCore.QRect(10, 10, 380, 280))
         
-        self.logOutput.insertPlainText(str(self.result))
+        text = ""
+        for result in self.results:
+            for key in result.keys():
+                text += "{}: {}\n".format(key, result[key])
+            text += '\n'
+        if text == "":
+            text = "no trade histroy"
+        self.logOutput.insertPlainText(text)
 
         self.show()
 
@@ -111,7 +122,7 @@ class Ui_main(QMainWindow):
         self.depositButton.clicked.connect(self.deposit)
         self.withdrawButton.clicked.connect(self.withdraw)
         self.transferButton.clicked.connect(self.transfer)
-        self.printoutButton.clicked.connect(self.printout)
+        self.printoutButton.clicked.connect(self.printout_all)
 
         self.resize(400, 300)
         self.setWindowTitle("业务")
@@ -126,7 +137,7 @@ class Ui_main(QMainWindow):
         self._operation('withdraw', result)
 
     def transfer(self):
-        result = {'timestamp': time.asctime(), 'type': 'deposit'}
+        result = {'timestamp': time.asctime(), 'type': 'transfer'}
         self._operation('transfer', result)
 
     def _operation(self, type, result):
@@ -147,35 +158,44 @@ class Ui_main(QMainWindow):
                         reply = self.control.withdraw(amount)
                     elif type == 'transfer':
                         transferred = dialog.transferred()
+                        result['transferred'] = transferred
                         reply = self.control.transfer(amount, transferred)
                     else:
                         self.statusBar().showMessage("error, unknow work type")
                         return
 
                     logging.debug("reply from control: {}".format(str(reply)))
-                    if reply['status'] == True:
-                        result['result'] = 'success'
-                        self.statusBar().showMessage("{} {:.2f} sucessfully.".format(type, amount))
+                    if reply.get("status") != None and reply.get('sequence') == None: # TEST_POINT 导致的 bug 修正
+                        if reply['status'] == True:
+                            result['result'] = 'success'
+                            self.statusBar().showMessage("{} {:.2f} sucessfully.".format(type, amount))
+                        else:
+                            result['result'] = 'fail'
+                            self.statusBar().showMessage("{} {:.2f} failed. Reason: {}".format(type, amount, reply['msg']))
                     else:
                         result['result'] = 'fail'
-                        self.statusBar().showMessage("{} {:.2f} failed. Reason: {}".format(type, amount, reply['msg']))
+                        self.statusBar().showMessage("{} {:.2f} failed. Unknow reason.".format(type, amount))
             except ValueError:
+                result = '-1'
                 result['result'] = 'fail'
                 self.statusBar().showMessage("请输入有效正数")
             except Exception as e:
                 result['result'] = 'fail'
                 self.statusBar().showMessage(str(e))
             finally:
-                printout = self.printout(result)
+                printout = self.printout((result,))
                 self.listPrint.append(result)
 
         dialog.destroy()
 
-    def printout(self, result):
+    def printout_all(self):
+        self.print_dialog = Print_dialog(self.listPrint)
+
+    def printout(self, results):
         reply = QMessageBox.question(self, '消息', '打印交易清单?',
                                      QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
         if reply == QMessageBox.Yes:
-            print_dialog = Print_dialog(result)
+            self.print_dialog = Print_dialog(results)
             
 if __name__ == "__main__":
     app = QApplication(sys.argv)

@@ -1,6 +1,25 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+"""
+服务器崩溃时刻：
+
+1. 第一阶段 recv 之前                -- 正常
+2. 第一阶段 recv 后、 ack 前         -- 正常
+3. 第一阶段 ack 后、第二阶段 recv 前 -- 无解，数据可能不一致，二阶段提交协议弊端
+4. 第二阶段 recv 后、ack 前          -- 未实现，可以根据日志内容进行回滚，恢复正常状态
+5. 第二阶段 ack 后                   -- 正常
+"""
+
+# ------ TEST POINT ------
+TEST_POINT_1 = False # before first stage recv
+TEST_POINT_2 = False # before first stage send
+TEST_POINT_3 = False # before second recv
+TEST_POINT_4 = False # before second send
+TEST_POINT_5 = False # 无意义的存在
+# --------- END ----------
+
+import sys
 import json
 import time
 import signal
@@ -14,7 +33,7 @@ __TIMEOUT__ = 10 # client socket timeout
 
 log_fmt = '[%(asctime)s] p%(process)s {%(pathname)s:%(lineno)d} %(levelname)s - %(message)s'
 date_fmt = '%m-%d %H:%M:%S'
-logging.basicConfig(filename='server.log',level=logging.DEBUG, format=log_fmt, datefmt=date_fmt)
+logging.basicConfig(filename='server.log',level=logging.INFO, format=log_fmt, datefmt=date_fmt)
 
 class Server:
 
@@ -55,6 +74,12 @@ class Server:
         self.cnx = SQL()
         try:
             # first stage -- enquire
+
+            # test point 1
+            if TEST_POINT_1 == True:
+                logging.info("TEST_POINT_1 == True, exit")
+                sys.exit(0)
+
             buf = client.recv(1024).decode("utf-8")
             iresult[1] = True
             logging.debug("first stage from coordinaotr: {}".format(buf))
@@ -75,6 +100,11 @@ class Server:
                 payload = json.dumps(ack).encode('utf-8')
                 
                 iresult[2] = True
+
+                # test point 2
+                if TEST_POINT_2 == True:
+                    logging.info("TEST_POINT_2 == True, exit")
+                    sys.exit(0)
                 client.sendall(payload)
                 iresult[3] = True
                 
@@ -82,6 +112,12 @@ class Server:
                 # first stage complete
 
                 # second stage -- commit or rollback
+
+                # test point 3
+                if TEST_POINT_3 == True:
+                    logging.info("TEST_POINT_3 == True, exit")
+                    sys.exit(0)
+
                 buf = client.recv(1024).decode('utf-8')
                 iresult[4] = True
                 logging.debug("second stage from coordinator: {}".format(buf))
@@ -98,11 +134,16 @@ class Server:
                         logging.debug("rollback")
                         self.rollback()
                     iresult[5] = True
+                    # test point 4
+                    if TEST_POINT_4 == True:
+                        logging.info("TEST_POINT_4 == True, exit")
+                        sys.exit(0)
+
                     client.sendall(payload)
                     iresult[6] = True
 
                 logging.info("{} second stage completes.".format(sequence))
-    
+                
         except Exception as e:
             # 崩溃，检查完成情况
             for i in range(1, 5):

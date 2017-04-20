@@ -36,7 +36,7 @@ the homework of network computing class
 | status     | 状态标志           | 0 代表成功，1 代表失败 |
 | token      | 会话标识           |               |
 | deadline | 到期时间           |               |
-| msg        | 错误消息，仅失败的时候不为空 |               |
+| msg        | 消息 |               |
 
 大致流程:
 
@@ -72,9 +72,9 @@ the homework of network computing class
 /* Server 返回格式 */
 {
     "type": "01",
-    "status": "0",
+    "status": 0,
     "token": "1995172d456c6f0266142f8175eaafca",
-    "deadline": "1491567752",
+    "deadline": 1491567752,
     "msg": ""
 }
 ```
@@ -96,7 +96,7 @@ the homework of network computing class
 | type   | 协议类型           | 值为 11         |
 | token  | 会话标识           |               |
 | status | 状态标志           | 0 代表成功，1 代表失败 |
-| msg    | 错误消息，仅失败的时候不为空 |               |
+| msg    | 消息 |               |
 
 大致流程:
 
@@ -117,8 +117,8 @@ the homework of network computing class
 {
     "type": "11",
     "token": "1995172d456c6f0266142f8175eaafca",
-    "status": "0",
-    "deadline": "1491567752",
+    "status": 0,
+    "deadline": 1491567752,
     "msg": ""
 }
 ```
@@ -141,7 +141,7 @@ the homework of network computing class
 | type   | 协议类型           | 值为 21         |
 | token  | 会话标识           |               |
 | status | 状态标志            | 0 代表成功，1 代表失败 |
-| msg    | 错误消息，仅失败的时候不为空 |               |
+| msg    | 消息 |               |
 
 大致流程:
 
@@ -164,7 +164,7 @@ the homework of network computing class
 {
     "type": "21",
     "token": "1995172d456c6f0266142f8175eaafca",
-    "status": "0",
+    "status": 0,
     "msg": ""
 }
 ```
@@ -187,7 +187,7 @@ the homework of network computing class
 | type   | 协议类型           | 值为 31         |
 | token  | 会话标识           |               |
 | status | 状态标志           | 0 代表成功，1 代表失败 |
-| msg    | 错误消息，仅失败的时候不为空 |               |
+| msg    | 消息 |               |
 
 大致流程:
 
@@ -210,7 +210,7 @@ the homework of network computing class
 {
     "type": "31",
     "token": "1995172d456c6f0266142f8175eaafca",
-    "status": "0",
+    "status": 0,
     "msg": ""
 }
 ```
@@ -234,7 +234,7 @@ the homework of network computing class
 | type   | 协议类型           | 值为 41         |
 | token  | 会话标识           |               |
 | status | 状态标志           | 0 代表成功，1 代表失败 |
-| msg    | 错误消息，仅失败的时候不为空 |               |
+| msg    | 消息 |               |
 
 大致流程:
 
@@ -258,7 +258,7 @@ the homework of network computing class
 {
     "type": "41",
     "token": "1995172d456c6f0266142f8175eaafca",
-    "status": "0",
+    "status": 0,
     "msg": ""
 }
 ```

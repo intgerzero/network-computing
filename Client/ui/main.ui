@@ -53,7 +53,7 @@
    <widget class="QPushButton" name="pushButton_3">
     <property name="geometry">
      <rect>
-      <x>60</x>
+      <x>160</x>
       <y>140</y>
       <width>107</width>
       <height>35</height>
@@ -66,24 +66,6 @@
     </property>
     <property name="text">
      <string>转账</string>
-    </property>
-   </widget>
-   <widget class="QPushButton" name="pushButton_4">
-    <property name="geometry">
-     <rect>
-      <x>260</x>
-      <y>140</y>
-      <width>107</width>
-      <height>35</height>
-     </rect>
-    </property>
-    <property name="font">
-     <font>
-      <pointsize>16</pointsize>
-     </font>
-    </property>
-    <property name="text">
-     <string>打印清单</string>
     </property>
    </widget>
   </widget>

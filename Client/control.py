@@ -1,6 +1,28 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+"""
+客户端崩溃时刻：
+
+1. 发送业务请求之前                     -- 正常
+2. 发送业务请求之后，第一阶段 recv 之前 -- 正常
+3. 第一阶段 recv 之后、ack 之前         -- 正常
+4. 第一阶段 ack 之后、第二阶段 recv 前  -- 无解，数据可能不一致，二阶段提交协议弊端
+5. 第二阶段 recv 后、ack 之前           -- 未实现，根据日志可恢复(本地事务范围)
+6. 第二阶段 ack 之后, recv result 之前  -- 本地事务范围
+7. recv result 之后                     -- 显示问题
+"""
+# ------ TEST POINT ------
+TEST_POINT_1 = False # before request
+TEST_POINT_2 = False # before first recv
+TEST_POINT_3 = False # before first send
+TEST_POINT_4 = False # before second recv
+TEST_POINT_5 = False # before second send
+TEST_POINT_6 = False # before result recv
+TEST_POINT_7 = False # after  result recv
+# --------- END ----------
+
+import sys
 import json
 import time
 import math
@@ -13,7 +35,7 @@ __TIMEOUT__ = 10
 
 log_fmt = '[%(asctime)s] p%(process)s {%(pathname)s:%(lineno)d} %(levelname)s - %(message)s'
 date_fmt = '%m-%d %H:%M:%S'
-logging.basicConfig(filename='control.log',level=logging.DEBUG, format=log_fmt, datefmt=date_fmt)
+logging.basicConfig(filename='control.log',level=logging.INFO, format=log_fmt, datefmt=date_fmt)
 
 class Control:
 
@@ -167,7 +189,18 @@ class Control:
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             s.settimeout(__TIMEOUT__)
             s.connect(self.address)
+            
+            # test point 1
+            if TEST_POINT_1 == True:
+                logging.info("TEST_POINT_1 == True, exit")
+                exit(0)
+
             s.sendall(payload)
+
+            if TEST_POINT_2 == True:
+                logging.info("TEST_POINT_2 == True, exit")
+                exit(0)
+
             buf = s.recv(1024).decode('utf-8')
             if buf == '': # 连接被关闭
                 result['status'] = False # 事务执行失败
@@ -180,8 +213,19 @@ class Control:
                 else:
                     self._transaction(s, reply) # ignore return
                 
+                    # test point 6
+                    if TEST_POINT_6 == True:
+                        logging.info("TEST_POINT_6 == True, exit")
+                        exit(0)
+
                     buf = s.recv(1024).decode('utf-8')
                     logging.debug("deposite result: {}".format(buf))
+
+                    # test point 7
+                    if TEST_POINT_7 == True:
+                        logging.info("TEST_POINT_7 == True, exit")
+                        exit(0)
+
                     if buf == '': # 连接被关闭
                         result['msg'] = 'socket close'
                         result['status'] = False
@@ -212,10 +256,20 @@ class Control:
 
             ack = {'sequence': sequence, 'status': 0} # 回复
             payload = json.dumps(ack).encode('utf-8')
+
+            if TEST_POINT_3 == True:
+                logging.info("TEST_POINT_3 == True, exit")
+                exit(0)
+
             s.sendall(payload)
             logging.info("{} first stage completes.".format(sequence))
 
             # second stage -- commit or rollback
+
+            if TEST_POINT_4 == True:
+                logging.info("TEST_POINT_4 == True, exit")
+                exit(0)
+
             buf = s.recv(1024).decode('utf-8')
             logging.debug("second stage from coordinator: {}".format(buf))
 
@@ -233,6 +287,9 @@ class Control:
                     # 回滚操作，释放资源
                     result['status'] = False
                     result['msg'] = 'transaction fail'
+                if TEST_POINT_5 == True:
+                    logging.info("TEST_POINT_% == True, exit")
+                    exit(0)
                 s.sendall(payload)
             logging.info("{} second stage completes.".format(sequence))
 
