@@ -10,6 +10,7 @@
 4. 第一阶段 ack 之后、第二阶段 recv 前  -- 无解，数据可能不一致，二阶段提交协议弊端
 5. 第二阶段 recv 后、ack 之前           -- 未实现，根据日志可恢复(本地事务范围)
 6. 第二阶段 ack 之后, recv result 之前  -- 本地事务范围
+7. recv result 之后                     -- 显示问题
 """
 # ------ TEST POINT ------
 TEST_POINT_1 = False # before request
