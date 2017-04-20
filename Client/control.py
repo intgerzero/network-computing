@@ -35,7 +35,7 @@ __TIMEOUT__ = 10
 
 log_fmt = '[%(asctime)s] p%(process)s {%(pathname)s:%(lineno)d} %(levelname)s - %(message)s'
 date_fmt = '%m-%d %H:%M:%S'
-logging.basicConfig(filename='control.log',level=logging.INFO, format=log_fmt, datefmt=date_fmt)
+logging.basicConfig(filename='control.log',level=logging.DEBUG, format=log_fmt, datefmt=date_fmt)
 
 class Control:
 
