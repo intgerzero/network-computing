@@ -1,3 +1,4 @@
+```
 ATM request --> Coordinator
                       |
            1          v
@@ -15,6 +16,7 @@ ATM recv <-- Second stage start    --> Server recv
  | complete                               | complete
 6v        7                               v
 ATM send --> Second stage complete <-- Server send
+```
 
 # 崩溃时间段
 
