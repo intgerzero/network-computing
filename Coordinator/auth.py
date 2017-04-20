@@ -8,6 +8,17 @@ import hashlib
 import mysql.connector
 
 class ClientAuth:
+    """
+    database: login
+    tables:   login / token
+        login:
+            bankcard char(20)
+            password char(20)
+        token:
+            bankcard char(20)
+            deadline bigint(20)
+            token    char(20)
+    """
 
     def __init__(self, **kw):
         # 默认设置

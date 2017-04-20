@@ -60,8 +60,8 @@ class Control:
                     self.login_info['token'] = reply['token']
                     self.login_info['deadline'] = int(reply['deadline'])
                     result['status'] = True
-                    self.t_renewal = Thread(target=self.renewal_token)
-                    self.t_renewal.start()
+                    #self.t_renewal = Thread(target=self.renewal_token)
+                    #self.t_renewal.start()
                 else:
                     result['status'] = False
                 result['msg'] = reply['msg']
@@ -178,7 +178,7 @@ class Control:
                     result['status'] = False
                     result['msg'] = reply['msg']
                 else:
-                    self._transaction(reply) # ignore return
+                    self._transaction(s, reply) # ignore return
                 
                     buf = s.recv(1024).decode('utf-8')
                     logging.debug("deposite result: {}".format(buf))
@@ -187,37 +187,42 @@ class Control:
                         result['status'] = False
                     else:
                         result = json.loads(buf)
+                        if result['status'] == 0:
+                            result['status'] = True
+                        else:
+                            result['status'] = False
         except Exception as e:
             result['status'] = False
             result['msg'] = e
         finally:
             return result
 
-    def _transaction(self, reply):
+    def _transaction(self, s, reply):
         logging.info("------ Transaction Start ------")
 
         result = dict()
         try:
             # first stage -- enquire or close socket or can't operation transaction
-            logging.debug("first stage from coordinaotr: {}".format(buf))
+            logging.debug("first stage from coordinaotr: {}".format(str(reply)))
 
             sequence = reply['sequence'] # 标记事务序列
 
-            ack = {'sequence': sequence, 'status': '0'} # 回复
+            # 执行本地事务操作，但不释放资源
+            logging.info("redo, msg: {}".format(str(reply['msg'])))
+
+            ack = {'sequence': sequence, 'status': 0} # 回复
             payload = json.dumps(ack).encode('utf-8')
             s.sendall(payload)
             logging.info("{} first stage completes.".format(sequence))
 
-            # 执行本地事务操作，但不释放资源
-            logging.info("redo, msg: {}".format(operation))
-
             # second stage -- commit or rollback
             buf = s.recv(1024).decode('utf-8')
-            logging.debuf("second stage from coordinator: {}".format(buf))
+            logging.debug("second stage from coordinator: {}".format(buf))
 
             if buf == "": # 连接被关闭
                 result['status'] = False # 事务执行失败
                 result['msg'] = 'socket closed'
+                # roolback
             else:
                 reply = json.loads(buf)
                 if reply['sequence'] == sequence and reply['status'] == 0:
@@ -229,12 +234,12 @@ class Control:
                     result['status'] = False
                     result['msg'] = 'transaction fail'
                 s.sendall(payload)
-                logging.info("{} second stage completes.".format(sequence))
+            logging.info("{} second stage completes.".format(sequence))
 
         except Exception as e:
             result['status'] = False
             result['msg'] = e
         finally:
             logging.info("------ Transaction End ------")
-            logging.debug("{} transaction result: {}".format(str(result)))
+            logging.debug("transaction result: {}".format(str(result)))
             return result

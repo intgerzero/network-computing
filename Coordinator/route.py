@@ -84,6 +84,7 @@ class Route:
                     # 先验证是否存在收款人账户
                     self.client_auth.connect()
                     status, error = self.client_auth.search(msg['transferred'])
+                    logging.debug("transferred status {}".format(status))
                     self.client_auth.close()
                     if status:
                         reply = self._transaction(msg, client)
@@ -93,7 +94,8 @@ class Route:
                                     'status': 1,
                                     'msg': error
                             }
-                    client.sendall(self._transaction(msg, client))
+                        reply = json.dumps(message).encode('utf-8')
+                    client.sendall(reply)
         except Exception as e:
             logging.debug("Client {}".format(e))
         finally:
@@ -186,7 +188,7 @@ class Route:
                 serv_sock, error = self._server_sock()
                 if serv_sock != None:
                     tran = Transaction(msg, client, serv_sock)
-                    flag = tran.wto_pharse_commit()
+                    flag = tran.two_phase_commit()
                     serv_sock.close()
 
                     if flag:

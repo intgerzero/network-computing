@@ -13,7 +13,7 @@ from control import Control
 from PyQt5 import QtCore, QtGui
 from PyQt5.QtWidgets import (QApplication, QDialog, QSizePolicy,
         QMainWindow, QPushButton, QGridLayout, QVBoxLayout,
-        QLabel, QLineEdit, QDialogButtonBox, QSpacerItem)
+        QLabel, QLineEdit, QDialogButtonBox, QSpacerItem, QMessageBox, QTextEdit)
 
 log_fmt = '[%(asctime)s] p%(process)s {%(pathname)s:%(lineno)d} %(levelname)s - %(message)s'
 date_fmt = '%m-%d %H:%M:%S'
@@ -29,6 +29,7 @@ class Dialog(QDialog):
 
     def initUI(self):
         self.resize(240, 200)
+        self.setWindowTitle("")
         
         grid = QGridLayout()
         
@@ -64,8 +65,29 @@ class Dialog(QDialog):
     def amount(self):
         return self.amountEdit.text()
 
-    def transfered(self):
+    def transferred(self):
         return self.transferedEdit.text()
+
+class Print_dialog(QDialog):
+
+    def __init__(self, result):
+        self.result = result
+        super().__init__()
+
+    def initUI(self):
+        self.resize(240, 200)
+        self.setWindowTitle("交易清单")
+
+        self.setSizeGripEnabled(True)
+        self.logOutput = QTextEdit(self)
+        self.logOutput.setReadOnly(True)
+        self.logOutput.setLineWrapMode(QTextEdit.NoWrap)
+        self.logOutput.setGeometry(QtCore.QRect(10, 10, 380, 280))
+        
+        self.logOutput.insertPlainText(str(self.result))
+
+        self.show()
+
 
 class Ui_main(QMainWindow):
 
@@ -97,18 +119,18 @@ class Ui_main(QMainWindow):
 
     def deposit(self):
         result = {'timestamp': time.asctime(), 'type': 'deposit'}
-        self._operation(result)
+        self._operation('deposit', result)
 
     def withdraw(self):
         result = {'timestamp': time.asctime(), 'type': 'withdraw'}
-        self._operation(result)
+        self._operation('withdraw', result)
 
     def transfer(self):
         result = {'timestamp': time.asctime(), 'type': 'deposit'}
-        self._operation(result)
+        self._operation('transfer', result)
 
-    def _operation(self, result):
-        dialog = Dialog('deposit', self)
+    def _operation(self, type, result):
+        dialog = Dialog(type, self)
         if dialog.exec_():
             amount = dialog.amount()
             # 输入检查, 留空
@@ -119,14 +141,24 @@ class Ui_main(QMainWindow):
                 else:
                     result['amount'] = amount
                     self.statusBar().showMessage("正在处理...")
-                    reply = self.control.deposit(amount)
-                    
+                    if type == 'deposit':
+                        reply = self.control.deposit(amount)
+                    elif type == 'withdraw':
+                        reply = self.control.withdraw(amount)
+                    elif type == 'transfer':
+                        transferred = dialog.transferred()
+                        reply = self.control.transfer(amount, transferred)
+                    else:
+                        self.statusBar().showMessage("error, unknow work type")
+                        return
+
+                    logging.debug("reply from control: {}".format(str(reply)))
                     if reply['status'] == True:
                         result['result'] = 'success'
-                        self.statusBar().showMessage("deposit {:.2f} sucessfully.".format(amount))
+                        self.statusBar().showMessage("{} {:.2f} sucessfully.".format(type, amount))
                     else:
                         result['result'] = 'fail'
-                        self.statusBar().showMessage("deposit {:.2f} failed. Reason: {}".format(amount, reply['msg']))
+                        self.statusBar().showMessage("{} {:.2f} failed. Reason: {}".format(type, amount, reply['msg']))
             except ValueError:
                 result['result'] = 'fail'
                 self.statusBar().showMessage("请输入有效正数")
@@ -134,13 +166,17 @@ class Ui_main(QMainWindow):
                 result['result'] = 'fail'
                 self.statusBar().showMessage(str(e))
             finally:
+                printout = self.printout(result)
                 self.listPrint.append(result)
 
         dialog.destroy()
 
-    def printout(self):
-        pass
-
+    def printout(self, result):
+        reply = QMessageBox.question(self, '消息', '打印交易清单?',
+                                     QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
+        if reply == QMessageBox.Yes:
+            print_dialog = Print_dialog(result)
+            
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     uiMain = Ui_main()
