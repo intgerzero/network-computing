@@ -48,6 +48,9 @@ ATM send --> Second stage complete <-- Server send
 
 __假设协调者正常，网络正常，第一阶段 ACK 后第二阶段 RECV 前正常__
 
+> 未实现 协调者收到所有参与者节点反馈的 完成 消息之后，才完成事务。
+>   实现: 默认第二阶段中参与者一定会执行完操作
+
 ## ATM 机 / Server 崩溃
 
 应对策略：

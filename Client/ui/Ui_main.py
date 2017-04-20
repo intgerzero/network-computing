@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file '/home/me/git/network-computing/Client/main.ui'
+# Form implementation generated from reading ui file '/home/me/git/network-computing/Client/ui/main.ui'
 #
 # Created by: PyQt5 UI code generator 5.5.1
 #
@@ -27,17 +27,11 @@ class Ui_Main(object):
         self.pushButton_2.setFont(font)
         self.pushButton_2.setObjectName("pushButton_2")
         self.pushButton_3 = QtWidgets.QPushButton(self.centralWidget)
-        self.pushButton_3.setGeometry(QtCore.QRect(60, 140, 107, 35))
+        self.pushButton_3.setGeometry(QtCore.QRect(160, 140, 107, 35))
         font = QtGui.QFont()
         font.setPointSize(16)
         self.pushButton_3.setFont(font)
         self.pushButton_3.setObjectName("pushButton_3")
-        self.pushButton_4 = QtWidgets.QPushButton(self.centralWidget)
-        self.pushButton_4.setGeometry(QtCore.QRect(260, 140, 107, 35))
-        font = QtGui.QFont()
-        font.setPointSize(16)
-        self.pushButton_4.setFont(font)
-        self.pushButton_4.setObjectName("pushButton_4")
         Main.setCentralWidget(self.centralWidget)
 
         self.retranslateUi(Main)
@@ -49,7 +43,6 @@ class Ui_Main(object):
         self.pushButton.setText(_translate("Main", "存款"))
         self.pushButton_2.setText(_translate("Main", "取款"))
         self.pushButton_3.setText(_translate("Main", "转账"))
-        self.pushButton_4.setText(_translate("Main", "打印清单"))
 
 
 if __name__ == "__main__":

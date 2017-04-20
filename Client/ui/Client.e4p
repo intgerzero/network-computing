@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Project SYSTEM "Project-5.1.dtd">
 <!-- eric project file for project Client -->
-<!-- Saved: 2017-04-20, 11:43:17 -->
+<!-- Saved: 2017-04-20, 12:29:05 -->
 <!-- Copyright (C) 2017 ,  -->
 <Project version="5.1">
   <Language>en_US</Language>
@@ -17,6 +17,7 @@
     <Source>__init__.py</Source>
     <Source>Ui_login.py</Source>
     <Source>Ui_dialog.py</Source>
+    <Source>Ui_main.py</Source>
   </Sources>
   <Forms>
     <Form>login.ui</Form>
