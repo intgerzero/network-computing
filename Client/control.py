@@ -183,6 +183,13 @@ class Control:
 
 
     def _operation(self, msg):
+        """
+        return value:
+           result = {
+                "status": bool,
+                "msg": message
+            }
+        """
         result = dict()
         try:
             payload = json.dumps(msg).encode('utf-8')
